@@ -17,8 +17,8 @@ bark-check の実装を、データモデル → コアロジック → CLI レ�
   - `models/` ディレクトリを作成し、`.gitkeep` を配置する
   - _Requirements: 1.1, 4.1_
 
-- [ ] 2. DetectionResult データモデルの実装
-  - [ ] 2.1 `src/bark_check/models.py` に `DetectionResult` dataclass を実装する
+- [x] 2. DetectionResult データモデルの実装
+  - [x] 2.1 `src/bark_check/models.py` に `DetectionResult` dataclass を実装する
     - フィールド: `is_bark: bool`, `confidence: float`, `timestamp: float`, `audio_duration: float`, `error: str | None = None`
     - `to_json()` メソッド（is_bark, confidence, timestamp, audio_duration, error を JSON にシリアライズ）を実装する
     - `from_json()` クラスメソッド（不正 JSON / 必須フィールド欠落時は error フィールド付き DetectionResult を返し例外を発生させない）を実装する
@@ -41,11 +41,11 @@ bark-check の実装を、データモデル → コアロジック → CLI レ�
     - 正常シリアライズ・デシリアライズのケース（error=None, error あり）をテストする
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
 
-- [ ] 3. チェックポイント — データモデルのテストがすべて通ること
+- [x] 3. チェックポイント — データモデルのテストがすべて通ること
   - すべてのテストが通ることを確認する。問題があればユーザーに質問する。
 
-- [ ] 4. FeatureExtractor の実装
-  - [ ] 4.1 `src/bark_check/feature_extractor.py` に `FeatureExtractor` クラスを実装する
+- [x] 4. FeatureExtractor の実装
+  - [x] 4.1 `src/bark_check/feature_extractor.py` に `FeatureExtractor` クラスを実装する
     - `extract(pcm: np.ndarray, sample_rate: int) -> np.ndarray` メソッドを実装する
     - librosa を使って MFCC を抽出する（サンプリングレート 16,000 Hz にリサンプリング、フレームサイズ 400、フレームシフト 160、MFCC 係数数 40）
     - 出力形状: `[T, 40]`
@@ -57,8 +57,8 @@ bark-check の実装を、データモデル → コアロジック → CLI レ�
     - 8kHz の入力を渡したとき 16kHz へのリサンプリングが正しく動作することをテストする
     - _Requirements: 2.6, 4.3_
 
-- [ ] 5. BarkDetector コアロジックの実装
-  - [ ] 5.1 `src/bark_check/bark_detector.py` に `BarkDetector` クラスと `ModelLoadError` 例外クラスを実装する
+- [x] 5. BarkDetector コアロジックの実装
+  - [x] 5.1 `src/bark_check/bark_detector.py` に `BarkDetector` クラスと `ModelLoadError` 例外クラスを実装する
     - `__init__(self, threshold: float = 0.5, model_path: str | None = None)` を実装する（threshold が [0.0, 1.0] 範囲外なら ValueError）
     - `detect(self, pcm: np.ndarray, sample_rate: int) -> DetectionResult` を実装する
       - 空入力（length == 0）: `error="Input PCM block is empty"` を持つ DetectionResult を返す
@@ -96,11 +96,11 @@ bark-check の実装を、データモデル → コアロジック → CLI レ�
     - 2 秒の PCM で推論が 500ms 以内に完了することをベンチマークとしてテストする（Requirements 2.5）
     - _Requirements: 2.4, 2.5, 5.1, 5.3_
 
-- [ ] 6. チェックポイント — コアロジックのテストがすべて通ること
+- [x] 6. チェックポイント — コアロジックのテストがすべて通ること
   - すべてのテストが通ることを確認する。問題があればユーザーに質問する。
 
-- [ ] 7. AudioLoader の実装
-  - [ ] 7.1 `src/bark_check/audio_loader.py` に `AudioLoader` クラスと `UnsupportedFormatError`、`AudioLoadError` 例外クラスを実装する
+- [x] 7. AudioLoader の実装
+  - [x] 7.1 `src/bark_check/audio_loader.py` に `AudioLoader` クラスと `UnsupportedFormatError`、`AudioLoadError` 例外クラスを実装する
     - `SUPPORTED_FORMATS = ("wav", "mp3", "flac", "ogg")`
     - `load(self, file_path: str) -> tuple[np.ndarray, int]` を実装する
       - ファイル非存在: `FileNotFoundError` を送出する
@@ -116,15 +116,15 @@ bark-check の実装を、データモデル → コアロジック → CLI レ�
     - 正常な WAV バイトで (pcm, sample_rate) タプルが返ることをテストする（numpy を使って合成 PCM を WAV バッファに書き込んでテスト）
     - _Requirements: 1.2, 1.3, 1.6_
 
-- [ ] 8. OutputFormatter の実装
-  - [ ] 8.1 `src/bark_check/output_formatter.py` に `OutputFormatter` クラスを実装する
+- [x] 8. OutputFormatter の実装
+  - [x] 8.1 `src/bark_check/output_formatter.py` に `OutputFormatter` クラスを実装する
     - `format_text(self, result: DetectionResult) -> str` を実装する（吠え声あり／なし + confidence を小数点以下 2 桁で返す）
     - `format_json(self, result: DetectionResult) -> str` を実装する（DetectionResult.to_json() を利用）
     - docstring は日本語 Google スタイルで記述する
     - _Requirements: 3.1, 3.2_
 
-- [ ] 9. CLI エントリポイントの実装
-  - [ ] 9.1 `src/bark_check/main.py` に `main()` 関数を実装する
+- [x] 9. CLI エントリポイントの実装
+  - [x] 9.1 `src/bark_check/main.py` に `main()` 関数を実装する
     - argparse で `audio_file`（位置引数）、`--json`、`--threshold` オプションを定義する
     - `--threshold` が [0.0, 1.0] 範囲外のとき stderr にエラーを出力して終了コード 1 で終了する
     - AudioLoader, BarkDetector, OutputFormatter を組み合わせてエンドツーエンドの処理フローを実装する
@@ -151,11 +151,11 @@ bark-check の実装を、データモデル → コアロジック → CLI レ�
     - モデル読み込み失敗で終了コード 4 になることをテストする（Requirements 5.2）
     - _Requirements: 1.2, 1.4, 1.5, 3.2, 3.4, 3.5, 3.6, 5.2_
 
-- [ ] 10. チェックポイント — CLI を含む全テストが通ること
+- [x] 10. チェックポイント — CLI を含む全テストが通ること
   - すべてのテストが通ることを確認する。問題があればユーザーに質問する。
 
-- [ ] 11. CoreML エクスポート機能の実装
-  - [ ] 11.1 `src/bark_check/coreml_exporter.py` に `CoreMLExporter` クラスを実装する
+- [x] 11. CoreML エクスポート機能の実装
+  - [x] 11.1 `src/bark_check/coreml_exporter.py` に `CoreMLExporter` クラスを実装する
     - `export(self, model_path: str, output_path: str) -> str` を実装する
     - ONNX モデルを coremltools で CoreML 仕様バージョン 4 以上（minimum_deployment_target = iOS 13.0）の `.mlmodel` 形式に変換する
     - 入力: `pcm_features` (MultiArray, float32, `[1, T, 40]`)
@@ -168,7 +168,7 @@ bark-check の実装を、データモデル → コアロジック → CLI レ�
     - `export_coreml()` が `.mlmodel` ファイルを生成しパスを返すことをテストする（coremltools が利用可能な環境のみ）
     - _Requirements: 4.5_
 
-- [ ] 12. 最終チェックポイント — 全テストが通ること
+- [x] 12. 最終チェックポイント — 全テストが通ること
   - すべてのテストが通ることを確認する。問題があればユーザーに質問する。
 
 ---

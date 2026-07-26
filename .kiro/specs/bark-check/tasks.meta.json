@@ -1,5 +1,26 @@
 {
-  "pbtResults": {},
+  "pbtResults": {
+    "5.2 Property 1 のプロパティテストを `tests/test_bark_detector.py` に実装する": {
+      "status": "passed",
+      "lastRunTimestamp": 1785071499005
+    },
+    "5.3 Property 2 のプロパティテストを `tests/test_bark_detector.py` に実装する": {
+      "status": "passed",
+      "lastRunTimestamp": 1785071499871
+    },
+    "5.4 Property 3 のプロパティテストを `tests/test_bark_detector.py` に実装する": {
+      "status": "passed",
+      "lastRunTimestamp": 1785071500831
+    },
+    "5.5 Property 6 のプロパティテストを `tests/test_bark_detector.py` に実装する": {
+      "status": "passed",
+      "lastRunTimestamp": 1785071501695
+    },
+    "5.6 Property 7 のプロパティテストを `tests/test_bark_detector.py` に実装する": {
+      "status": "passed",
+      "lastRunTimestamp": 1785071502582
+    }
+  },
   "executionHistory": {
     "1. プロジェクト基盤のセットアップ": [
       {
@@ -11,6 +32,227 @@
         "executionId": "06704f9b-67f2-49e8-aa04-4c1ec909f0d5",
         "chatSessionId": "sess_0542f9b4-3364-44c3-8f9a-1e75f182d7ca",
         "timestamp": 1785063937497
+      }
+    ],
+    "2.1 `src/bark_check/models.py` に `DetectionResult` dataclass を実装する": [
+      {
+        "executionId": "792c9650-5739-4595-8410-c72430f1f953",
+        "chatSessionId": "sess_25e15e0c-1a9a-4355-b568-432301b7636a",
+        "timestamp": 1785067944478
+      },
+      {
+        "executionId": "792c9650-5739-4595-8410-c72430f1f953",
+        "chatSessionId": "sess_25e15e0c-1a9a-4355-b568-432301b7636a",
+        "timestamp": 1785067954721
+      },
+      {
+        "executionId": "792c9650-5739-4595-8410-c72430f1f953",
+        "chatSessionId": "sess_25e15e0c-1a9a-4355-b568-432301b7636a",
+        "timestamp": 1785068198743
+      }
+    ],
+    "3. チェックポイント — データモデルのテストがすべて通ること": [
+      {
+        "executionId": "792c9650-5739-4595-8410-c72430f1f953",
+        "chatSessionId": "sess_25e15e0c-1a9a-4355-b568-432301b7636a",
+        "timestamp": 1785067944504
+      },
+      {
+        "executionId": "792c9650-5739-4595-8410-c72430f1f953",
+        "chatSessionId": "sess_25e15e0c-1a9a-4355-b568-432301b7636a",
+        "timestamp": 1785068208556
+      },
+      {
+        "executionId": "e56c2052-ff9e-41b0-b028-560d9a7a4652",
+        "chatSessionId": "sess_25e15e0c-1a9a-4355-b568-432301b7636a",
+        "timestamp": 1785070709559
+      }
+    ],
+    "4.1 `src/bark_check/feature_extractor.py` に `FeatureExtractor` クラスを実装する": [
+      {
+        "executionId": "792c9650-5739-4595-8410-c72430f1f953",
+        "chatSessionId": "sess_25e15e0c-1a9a-4355-b568-432301b7636a",
+        "timestamp": 1785067944529
+      },
+      {
+        "executionId": "792c9650-5739-4595-8410-c72430f1f953",
+        "chatSessionId": "sess_25e15e0c-1a9a-4355-b568-432301b7636a",
+        "timestamp": 1785068209291
+      },
+      {
+        "executionId": "e56c2052-ff9e-41b0-b028-560d9a7a4652",
+        "chatSessionId": "sess_25e15e0c-1a9a-4355-b568-432301b7636a",
+        "timestamp": 1785070746207
+      }
+    ],
+    "5.1 `src/bark_check/bark_detector.py` に `BarkDetector` クラスと `ModelLoadError` 例外クラスを実装する": [
+      {
+        "executionId": "792c9650-5739-4595-8410-c72430f1f953",
+        "chatSessionId": "sess_25e15e0c-1a9a-4355-b568-432301b7636a",
+        "timestamp": 1785067944549
+      },
+      {
+        "executionId": "e56c2052-ff9e-41b0-b028-560d9a7a4652",
+        "chatSessionId": "sess_25e15e0c-1a9a-4355-b568-432301b7636a",
+        "timestamp": 1785070760598
+      },
+      {
+        "executionId": "e56c2052-ff9e-41b0-b028-560d9a7a4652",
+        "chatSessionId": "sess_25e15e0c-1a9a-4355-b568-432301b7636a",
+        "timestamp": 1785070867923
+      }
+    ],
+    "6. チェックポイント — コアロジックのテストがすべて通ること": [
+      {
+        "executionId": "792c9650-5739-4595-8410-c72430f1f953",
+        "chatSessionId": "sess_25e15e0c-1a9a-4355-b568-432301b7636a",
+        "timestamp": 1785067944569
+      },
+      {
+        "executionId": "9a48b40d-06a9-491c-89f7-e2510e849370",
+        "chatSessionId": "sess_25e15e0c-1a9a-4355-b568-432301b7636a",
+        "timestamp": 1785071534167
+      }
+    ],
+    "7.1 `src/bark_check/audio_loader.py` に `AudioLoader` クラスと `UnsupportedFormatError`、`AudioLoadError` 例外クラスを実装する": [
+      {
+        "executionId": "792c9650-5739-4595-8410-c72430f1f953",
+        "chatSessionId": "sess_25e15e0c-1a9a-4355-b568-432301b7636a",
+        "timestamp": 1785067944589
+      },
+      {
+        "executionId": "9a48b40d-06a9-491c-89f7-e2510e849370",
+        "chatSessionId": "sess_25e15e0c-1a9a-4355-b568-432301b7636a",
+        "timestamp": 1785071535883
+      },
+      {
+        "executionId": "9a48b40d-06a9-491c-89f7-e2510e849370",
+        "chatSessionId": "sess_25e15e0c-1a9a-4355-b568-432301b7636a",
+        "timestamp": 1785071603583
+      }
+    ],
+    "8.1 `src/bark_check/output_formatter.py` に `OutputFormatter` クラスを実装する": [
+      {
+        "executionId": "792c9650-5739-4595-8410-c72430f1f953",
+        "chatSessionId": "sess_25e15e0c-1a9a-4355-b568-432301b7636a",
+        "timestamp": 1785067944612
+      },
+      {
+        "executionId": "9a48b40d-06a9-491c-89f7-e2510e849370",
+        "chatSessionId": "sess_25e15e0c-1a9a-4355-b568-432301b7636a",
+        "timestamp": 1785071536752
+      },
+      {
+        "executionId": "9a48b40d-06a9-491c-89f7-e2510e849370",
+        "chatSessionId": "sess_25e15e0c-1a9a-4355-b568-432301b7636a",
+        "timestamp": 1785071604493
+      }
+    ],
+    "9.1 `src/bark_check/main.py` に `main()` 関数を実装する": [
+      {
+        "executionId": "792c9650-5739-4595-8410-c72430f1f953",
+        "chatSessionId": "sess_25e15e0c-1a9a-4355-b568-432301b7636a",
+        "timestamp": 1785067944632
+      },
+      {
+        "executionId": "9a48b40d-06a9-491c-89f7-e2510e849370",
+        "chatSessionId": "sess_25e15e0c-1a9a-4355-b568-432301b7636a",
+        "timestamp": 1785071605414
+      },
+      {
+        "executionId": "9a48b40d-06a9-491c-89f7-e2510e849370",
+        "chatSessionId": "sess_25e15e0c-1a9a-4355-b568-432301b7636a",
+        "timestamp": 1785071672178
+      }
+    ],
+    "10. チェックポイント — CLI を含む全テストが通ること": [
+      {
+        "executionId": "792c9650-5739-4595-8410-c72430f1f953",
+        "chatSessionId": "sess_25e15e0c-1a9a-4355-b568-432301b7636a",
+        "timestamp": 1785067944652
+      },
+      {
+        "executionId": "9a48b40d-06a9-491c-89f7-e2510e849370",
+        "chatSessionId": "sess_25e15e0c-1a9a-4355-b568-432301b7636a",
+        "timestamp": 1785071780932
+      }
+    ],
+    "11.1 `src/bark_check/coreml_exporter.py` に `CoreMLExporter` クラスを実装する": [
+      {
+        "executionId": "792c9650-5739-4595-8410-c72430f1f953",
+        "chatSessionId": "sess_25e15e0c-1a9a-4355-b568-432301b7636a",
+        "timestamp": 1785067944670
+      },
+      {
+        "executionId": "9a48b40d-06a9-491c-89f7-e2510e849370",
+        "chatSessionId": "sess_25e15e0c-1a9a-4355-b568-432301b7636a",
+        "timestamp": 1785071782118
+      },
+      {
+        "executionId": "9a48b40d-06a9-491c-89f7-e2510e849370",
+        "chatSessionId": "sess_25e15e0c-1a9a-4355-b568-432301b7636a",
+        "timestamp": 1785071889762
+      }
+    ],
+    "12. 最終チェックポイント — 全テストが通ること": [
+      {
+        "executionId": "792c9650-5739-4595-8410-c72430f1f953",
+        "chatSessionId": "sess_25e15e0c-1a9a-4355-b568-432301b7636a",
+        "timestamp": 1785067944687
+      },
+      {
+        "executionId": "9a48b40d-06a9-491c-89f7-e2510e849370",
+        "chatSessionId": "sess_25e15e0c-1a9a-4355-b568-432301b7636a",
+        "timestamp": 1785071890550
+      }
+    ],
+    "2. DetectionResult データモデルの実装": [
+      {
+        "executionId": "792c9650-5739-4595-8410-c72430f1f953",
+        "chatSessionId": "sess_25e15e0c-1a9a-4355-b568-432301b7636a",
+        "timestamp": 1785068198776
+      }
+    ],
+    "4. FeatureExtractor の実装": [
+      {
+        "executionId": "e56c2052-ff9e-41b0-b028-560d9a7a4652",
+        "chatSessionId": "sess_25e15e0c-1a9a-4355-b568-432301b7636a",
+        "timestamp": 1785070746234
+      }
+    ],
+    "5. BarkDetector コアロジックの実装": [
+      {
+        "executionId": "e56c2052-ff9e-41b0-b028-560d9a7a4652",
+        "chatSessionId": "sess_25e15e0c-1a9a-4355-b568-432301b7636a",
+        "timestamp": 1785070867946
+      }
+    ],
+    "7. AudioLoader の実装": [
+      {
+        "executionId": "9a48b40d-06a9-491c-89f7-e2510e849370",
+        "chatSessionId": "sess_25e15e0c-1a9a-4355-b568-432301b7636a",
+        "timestamp": 1785071603609
+      }
+    ],
+    "8. OutputFormatter の実装": [
+      {
+        "executionId": "9a48b40d-06a9-491c-89f7-e2510e849370",
+        "chatSessionId": "sess_25e15e0c-1a9a-4355-b568-432301b7636a",
+        "timestamp": 1785071604524
+      }
+    ],
+    "9. CLI エントリポイントの実装": [
+      {
+        "executionId": "9a48b40d-06a9-491c-89f7-e2510e849370",
+        "chatSessionId": "sess_25e15e0c-1a9a-4355-b568-432301b7636a",
+        "timestamp": 1785071672203
+      }
+    ],
+    "11. CoreML エクスポート機能の実装": [
+      {
+        "executionId": "9a48b40d-06a9-491c-89f7-e2510e849370",
+        "chatSessionId": "sess_25e15e0c-1a9a-4355-b568-432301b7636a",
+        "timestamp": 1785071889793
       }
     ]
   }
