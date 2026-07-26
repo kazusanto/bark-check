@@ -44,6 +44,7 @@ class BarkDetector:
 
         self._threshold = threshold
         self._session = None
+        self._model_path: str | None = model_path
         self._feature_extractor = FeatureExtractor()
 
         if model_path is not None:
@@ -165,6 +166,14 @@ class BarkDetector:
             エクスポートされたファイルのパス。
 
         Raises:
-            NotImplementedError: CoreML エクスポート機能は未実装。
+            ModelLoadError: モデルが読み込まれていない場合。
+            FileNotFoundError: モデルファイルが存在しない場合。
+            RuntimeError: 変換に失敗した場合。
         """
-        raise NotImplementedError("CoreML exporter not yet implemented")
+        if self._session is None:
+            raise ModelLoadError("No model loaded")
+
+        from bark_check.coreml_exporter import CoreMLExporter
+
+        exporter = CoreMLExporter()
+        return exporter.export(self._model_path, output_path)
