@@ -29,3 +29,4 @@
 - 固有名詞・技術用語（BarkDetector, DetectionResult, MFCC, CoreML 等）
 - Mermaid ダイアグラムのノードラベル
 - テーブル内のコード・型名（`bool`, `float`, `str` 等）
+- spec フォーマットチェッカーが要求する固定表記（Correctness Properties の `**Validates: Requirements X.Y**` 行 等）

@@ -275,61 +275,61 @@ options:
 
 長さ制限内（1〜32,000 サンプル）の空でない float32 PCM 配列と任意の有効なサンプリングレートが与えられた場合、`BarkDetector.detect()` は `is_bark` が bool 型、`confidence` が [0.0, 1.0] の範囲内、かつ `error` フィールドが常に存在する（null または空でない文字列）`DetectionResult` を返さなければならない。
 
-**検証する要件: 2.1, 5.4**
+**Validates: Requirements 2.1, 5.4**
 
 ### Property 2: 閾値による吠え声判定の一貫性
 
 [0.0, 1.0] の範囲内の任意の confidence 値 `c` と任意の閾値 `t` に対して、`DetectionResult` の `is_bark` フィールドは `(c >= t)` と等しくなければならない。どの入力の組み合わせでも、閾値ルールに矛盾する結果が生成されてはならない。
 
-**検証する要件: 2.2, 2.3**
+**Validates: Requirements 2.2, 2.3**
 
 ### Property 3: 上限超過入力はエラー DetectionResult を返す
 
 32,000 サンプルを超える長さの任意の float32 配列に対して、`BarkDetector.detect()` は `error` が null でなく、長さ制限を超えたことを示す人間が読めるメッセージを含む `DetectionResult` を返さなければならない。
 
-**検証する要件: 2.8**
+**Validates: Requirements 2.8**
 
 ### Property 4: 無効拡張子は常に終了コード 2 で拒否される
 
 拡張子が `{"wav", "mp3", "flac", "ogg"}` のいずれでもない（大文字小文字を問わない）任意のファイルパスに対して、CLI は終了コード 2 で終了し、対応フォーマットの一覧を含むエラーメッセージを標準エラー出力に出力しなければならない。
 
-**検証する要件: 1.3**
+**Validates: Requirements 1.3**
 
 ### Property 5: --json 出力は常に有効なスキーマを持つ
 
 `--json` フラグを指定して処理された任意の有効な音声入力に対して、CLI の出力は少なくとも `is_bark`（bool 型）と `confidence`（[0.0, 1.0] の float 型）フィールドを含む有効な JSON でなければならない。
 
-**検証する要件: 3.2**
+**Validates: Requirements 3.2**
 
 ### Property 6: 無音入力は常に confidence 0.0 の吠え声なしを返す
 
 有効な長さ（1〜32,000 サンプル）の任意の全ゼロ float32 配列に対して、`BarkDetector.detect()` は `is_bark` が `False`、`confidence` が `0.0` の `DetectionResult` を返さなければならない。
 
-**検証する要件: 5.3**
+**Validates: Requirements 5.3**
 
 ### Property 7: 推論エラーは DetectionResult に格納され例外は伝播しない
 
 モデル推論中に実行時エラーを引き起こす任意の入力（例: モックされた例外）に対して、`BarkDetector.detect()` は null でない `error` フィールドを持つ `DetectionResult` を返さなければならず、呼び出し元に例外を発生させてはならない。
 
-**検証する要件: 5.1, 5.6**
+**Validates: Requirements 5.1, 5.6**
 
 ### Property 8: DetectionResult のシリアライズ・デシリアライズ ラウンドトリップ
 
 任意の有効な `DetectionResult` オブジェクトに対して、`to_json()` で JSON にシリアライズし `from_json()` でデシリアライズすると、元のオブジェクトと等価なオブジェクトが生成されなければならない。`confidence` は小数点以下 6 桁以上の精度、`timestamp` は秒単位の精度で保持されること。
 
-**検証する要件: 6.1, 6.2, 6.3**
+**Validates: Requirements 6.1, 6.2, 6.3**
 
 ### Property 9: 不正 JSON は error フィールドを持つ DetectionResult を返す
 
 有効な JSON 構文でない任意の文字列に対して、`DetectionResult.from_json()` はパースエラーメッセージを含む null でない `error` フィールドを持つ `DetectionResult` を返さなければならず、例外を発生させてはならない。
 
-**検証する要件: 6.4**
+**Validates: Requirements 6.4**
 
 ### Property 10: 必須フィールド欠落 JSON は欠落フィールド名をエラーに含む DetectionResult を返す
 
 必須フィールド（`is_bark`、`confidence`）の一方または両方が欠落した任意の有効な JSON オブジェクトに対して、`DetectionResult.from_json()` は `error` フィールドに欠落フィールド名を含む `DetectionResult` を返さなければならない。
 
-**検証する要件: 6.5**
+**Validates: Requirements 6.5**
 
 ---
 
