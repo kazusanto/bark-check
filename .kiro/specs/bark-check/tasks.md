@@ -10,7 +10,7 @@ bark-check の実装を、データモデル → コアロジック → CLI レ�
 
 ## Tasks
 
-- [ ] 1. プロジェクト基盤のセットアップ
+- [x] 1. プロジェクト基盤のセットアップ
   - `pyproject.toml` を作成し、依存関係（soundfile, librosa, onnxruntime, coremltools>=7.0, pytest, hypothesis）と CLI エントリポイント（`bark-check = "bark_check.main:main"`）を定義する
   - `src/bark_check/__init__.py` を作成してパッケージとして認識させる
   - `tests/__init__.py`、`tests/integration/__init__.py` を作成する

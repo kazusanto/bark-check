@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "bark-check"
+version = "0.1.0"
+description = "犬の吠え声を検出する CLI ツール"
+requires-python = ">=3.12"
+dependencies = [
+    "soundfile",
+    "librosa",
+    "onnxruntime",
+    "coremltools>=7.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "hypothesis",
+]
+
+[project.scripts]
+bark-check = "bark_check.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
