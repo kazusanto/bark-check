@@ -25,19 +25,19 @@ bark-check の実装を、データモデル → コアロジック → CLI レ�
     - docstring は日本語 Google スタイルで記述する
     - _Requirements: 2.1, 5.4, 5.5, 6.1, 6.2_
 
-  - [ ]* 2.2 Property 8 のプロパティテストを `tests/test_detection_result.py` に実装する
+  - [x] 2.2 Property 8 のプロパティテストを `tests/test_detection_result.py` に実装する
     - **Property 8: DetectionResult のシリアライズ・デシリアライズ ラウンドトリップ**
     - **Validates: Requirements 6.1, 6.2, 6.3**
 
-  - [ ]* 2.3 Property 9 のプロパティテストを `tests/test_detection_result.py` に実装する
+  - [x] 2.3 Property 9 のプロパティテストを `tests/test_detection_result.py` に実装する
     - **Property 9: 不正 JSON は error フィールドを持つ DetectionResult を返す**
     - **Validates: Requirements 6.4**
 
-  - [ ]* 2.4 Property 10 のプロパティテストを `tests/test_detection_result.py` に実装する
+  - [x] 2.4 Property 10 のプロパティテストを `tests/test_detection_result.py` に実装する
     - **Property 10: 必須フィールド欠落 JSON は欠落フィールド名をエラーに含む DetectionResult を返す**
     - **Validates: Requirements 6.5**
 
-  - [ ]* 2.5 `tests/test_detection_result.py` にユニットテストを実装する
+  - [x] 2.5 `tests/test_detection_result.py` にユニットテストを実装する
     - 正常シリアライズ・デシリアライズのケース（error=None, error あり）をテストする
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
 
@@ -52,7 +52,7 @@ bark-check の実装を、データモデル → コアロジック → CLI レ�
     - docstring は日本語 Google スタイルで記述する
     - _Requirements: 2.6, 4.3_
 
-  - [ ]* 4.2 `tests/test_feature_extractor.py` にユニットテストを実装する
+  - [x] 4.2 `tests/test_feature_extractor.py` にユニットテストを実装する
     - 16kHz の正弦波 PCM を入力したとき出力形状が `[T, 40]` になることをテストする
     - 8kHz の入力を渡したとき 16kHz へのリサンプリングが正しく動作することをテストする
     - _Requirements: 2.6, 4.3_
@@ -69,27 +69,27 @@ bark-check の実装を、データモデル → コアロジック → CLI レ�
     - docstring は日本語 Google スタイルで記述する
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.8, 4.1, 4.2, 5.1, 5.3, 5.4, 5.5, 5.6_
 
-  - [ ]* 5.2 Property 1 のプロパティテストを `tests/test_bark_detector.py` に実装する
+  - [x] 5.2 Property 1 のプロパティテストを `tests/test_bark_detector.py` に実装する
     - **Property 1: 有効な PCM 入力は常に有効な DetectionResult を返す**
     - **Validates: Requirements 2.1, 5.4**
 
-  - [ ]* 5.3 Property 2 のプロパティテストを `tests/test_bark_detector.py` に実装する
+  - [x] 5.3 Property 2 のプロパティテストを `tests/test_bark_detector.py` に実装する
     - **Property 2: 閾値による吠え声判定の一貫性**
     - **Validates: Requirements 2.2, 2.3**
 
-  - [ ]* 5.4 Property 3 のプロパティテストを `tests/test_bark_detector.py` に実装する
+  - [x] 5.4 Property 3 のプロパティテストを `tests/test_bark_detector.py` に実装する
     - **Property 3: 上限超過入力はエラー DetectionResult を返す**
     - **Validates: Requirements 2.8**
 
-  - [ ]* 5.5 Property 6 のプロパティテストを `tests/test_bark_detector.py` に実装する
+  - [x] 5.5 Property 6 のプロパティテストを `tests/test_bark_detector.py` に実装する
     - **Property 6: 無音入力は常に confidence 0.0 の吠え声なしを返す**
     - **Validates: Requirements 5.3**
 
-  - [ ]* 5.6 Property 7 のプロパティテストを `tests/test_bark_detector.py` に実装する
+  - [x] 5.6 Property 7 のプロパティテストを `tests/test_bark_detector.py` に実装する
     - **Property 7: 推論エラーは DetectionResult に格納され例外は伝播しない**
     - **Validates: Requirements 5.1, 5.6**
 
-  - [ ]* 5.7 `tests/test_bark_detector.py` にユニットテストを実装する
+  - [x] 5.7 `tests/test_bark_detector.py` にユニットテストを実装する
     - デフォルト閾値が 0.5 であることをテストする（Requirements 2.4）
     - 空入力エラーをテストする（Requirements 5.1）
     - 無音入力で confidence=0.0 を返すことをテストする（Requirements 5.3）
@@ -110,7 +110,7 @@ bark-check の実装を、データモデル → コアロジック → CLI レ�
     - docstring は日本語 Google スタイルで記述する
     - _Requirements: 1.2, 1.3, 1.6_
 
-  - [ ]* 7.2 `tests/test_audio_loader.py` にユニットテストを実装する
+  - [x] 7.2 `tests/test_audio_loader.py` にユニットテストを実装する
     - 存在しないパスで FileNotFoundError が送出されることをテストする
     - 非対応拡張子で UnsupportedFormatError が送出されることをテストする
     - 正常な WAV バイトで (pcm, sample_rate) タプルが返ることをテストする（numpy を使って合成 PCM を WAV バッファに書き込んでテスト）
@@ -132,15 +132,15 @@ bark-check の実装を、データモデル → コアロジック → CLI レ�
     - docstring は日本語 Google スタイルで記述する
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 5.2_
 
-  - [ ]* 9.2 Property 4 のプロパティテストを `tests/test_cli.py` に実装する
+  - [x] 9.2 Property 4 のプロパティテストを `tests/test_cli.py` に実装する
     - **Property 4: 無効拡張子は常に終了コード 2 で拒否される**
     - **Validates: Requirements 1.3**
 
-  - [ ]* 9.3 Property 5 のプロパティテストを `tests/test_cli.py` に実装する
+  - [x] 9.3 Property 5 のプロパティテストを `tests/test_cli.py` に実装する
     - **Property 5: --json 出力は常に有効なスキーマを持つ**
     - **Validates: Requirements 3.2**
 
-  - [ ]* 9.4 `tests/test_cli.py` にユニットテストを実装する
+  - [x] 9.4 `tests/test_cli.py` にユニットテストを実装する
     - `--help` で使用方法と対応フォーマット一覧が表示されることをテストする（Requirements 1.4）
     - 引数未指定で終了コード 1 になることをテストする（Requirements 1.5）
     - 存在しないパスで終了コード 1 になることをテストする（Requirements 1.2）
@@ -164,7 +164,7 @@ bark-check の実装を、データモデル → コアロジック → CLI レ�
     - docstring は日本語 Google スタイルで記述する
     - _Requirements: 4.5_
 
-  - [ ]* 11.2 `tests/test_bark_detector.py` に CoreML エクスポートのユニットテストを追加する
+  - [x] 11.2 `tests/test_bark_detector.py` に CoreML エクスポートのユニットテストを追加する
     - `export_coreml()` が `.mlmodel` ファイルを生成しパスを返すことをテストする（coremltools が利用可能な環境のみ）
     - _Requirements: 4.5_
 
