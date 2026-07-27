@@ -281,7 +281,7 @@ options:
 | フレームワーク | PyTorch (推論は ONNX Runtime または TorchScript) |
 | 入力テンソル形状 | `[1, T, 40]` (batch=1, frames, mfcc_dims) — float32 |
 | 出力テンソル形状 | `[1, 1]` (bark_probability) — float32 |
-| 最大入力長 | 32,000 サンプル (16kHz × 2 秒) |
+| 最大入力長 | 時間長 10.0 秒以内（サンプリングレート非依存。モデルは Global Average Pooling により任意長対応） |
 
 > **設計判断**: モデルを ONNX 形式で保持することで、PyTorch 非依存の推論（`onnxruntime` のみ）と CoreML エクスポートの両方を実現する。iOS 向けには `coremltools` で ONNX → CoreML 変換を行う。
 
@@ -300,7 +300,7 @@ options:
 
 ### Property 1: 有効な PCM 入力は常に有効な DetectionResult を返す
 
-長さ制限内（1〜32,000 サンプル）の空でない float32 PCM 配列と任意の有効なサンプリングレートが与えられた場合、`BarkDetector.detect()` は `is_bark` が bool 型、`confidence` が [0.0, 1.0] の範囲内、かつ `error` フィールドが常に存在する（null または空でない文字列）`DetectionResult` を返さなければならない。
+時間長制限内（`len(pcm) / sample_rate <= 10.0`）の空でない float32 PCM 配列と任意の有効なサンプリングレートが与えられた場合、`BarkDetector.detect()` は `is_bark` が bool 型、`confidence` が [0.0, 1.0] の範囲内、かつ `error` フィールドが常に存在する（null または空でない文字列）`DetectionResult` を返さなければならない。
 
 **Validates: Requirements 2.1, 5.4**
 
@@ -310,9 +310,9 @@ options:
 
 **Validates: Requirements 2.2, 2.3**
 
-### Property 3: 上限超過入力はエラー DetectionResult を返す
+### Property 3: 時間長超過入力はエラー DetectionResult を返す
 
-32,000 サンプルを超える長さの任意の float32 配列に対して、`BarkDetector.detect()` は `error` が null でなく、長さ制限を超えたことを示す人間が読めるメッセージを含む `DetectionResult` を返さなければならない。
+`len(pcm) / sample_rate > 10.0` を満たす任意の入力に対して、`BarkDetector.detect()` は `error="Input exceeds maximum duration of 10.0 seconds"`, `is_bark=False`, `confidence=0.0` の `DetectionResult` を返さなければならない。
 
 **Validates: Requirements 2.8**
 
@@ -369,7 +369,7 @@ options:
 | エラー条件 | `DetectionResult` の状態 |
 |---|---|
 | 空の PCM ブロック (length == 0) | `is_bark=False`, `confidence=0.0`, `error="Input PCM block is empty"` |
-| PCM 長が 32,000 超 | `is_bark=False`, `confidence=0.0`, `error="Input exceeds maximum length of 32000 samples"` |
+| PCM 時間長が 10.0 秒超 | `is_bark=False`, `confidence=0.0`, `error="Input exceeds maximum duration of 10.0 seconds"` |
 | 無音入力 (全ゼロ) | `is_bark=False`, `confidence=0.0`, `error=None` |
 | モデルが未ロード（session is None） | `is_bark=False`, `confidence=0.0`, `error="No model loaded"` |
 | 推論中ランタイムエラー | `is_bark=False`, `confidence=0.0`, `error="Inference error: <message>"` |

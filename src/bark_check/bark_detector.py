@@ -9,8 +9,8 @@ import numpy as np
 from bark_check.feature_extractor import FeatureExtractor
 from bark_check.models import DetectionResult
 
-# 入力 PCM の最大長（サンプル数）
-_MAX_PCM_LENGTH = 32000
+# 入力 PCM の最大時間長（秒）
+_MAX_DURATION_SEC = 10.0
 
 
 class ModelLoadError(Exception):
@@ -97,13 +97,13 @@ class BarkDetector:
             )
 
         # 上限超過チェック
-        if len(pcm) > _MAX_PCM_LENGTH:
+        if len(pcm) / sample_rate > _MAX_DURATION_SEC:
             return DetectionResult(
                 is_bark=False,
                 confidence=0.0,
                 timestamp=timestamp,
                 audio_duration=audio_duration,
-                error="Input exceeds maximum length of 32000 samples",
+                error="Input exceeds maximum duration of 10.0 seconds",
             )
 
         # 無音入力チェック

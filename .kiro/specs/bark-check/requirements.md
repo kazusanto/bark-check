@@ -52,7 +52,7 @@ CLI レイヤーでは AudioLoader が音声ファイルをデコードしてモ
 4. THE BarkDetector SHALL ConfidenceScore の閾値のデフォルト値を 0.5 とし、0.0 以上 1.0 以下の範囲で設定可能とする
 5. THE BarkDetector SHALL 2 秒以下の PcmBlock に対して 500ms 以内に DetectionResult を返す
 6. THE FeatureExtractor SHALL 16kHz のモノラル PCM を前提として特徴量を抽出する
-8. IF PcmBlock のサンプル数が 32000（16kHz × 2 秒）を超える場合, THEN THE BarkDetector SHALL 長さ上限を超えていることを示すエラーを含む DetectionResult を返す
+7. IF PcmBlock の時間長 (len(pcm) / sample_rate) が 10.0 秒を超える場合, THEN THE BarkDetector SHALL `is_bark=False`, `confidence=0.0`, `error="Input exceeds maximum duration of 10.0 seconds"` を含む DetectionResult を返す
 
 ---
 

@@ -73,12 +73,42 @@ class TestBarkDetectorDetect:
         assert result.error == "No model loaded"
 
     def test_上限超過入力のとき_error_が返ること(self):
-        """32001 サンプルの PCM 配列を渡したとき error が non-null になること。"""
+        """10 秒超の PCM 配列を渡したとき時間長ベースのエラーが返ること。"""
         detector = BarkDetector()
-        pcm = np.zeros(32001, dtype=np.float32)
+        # 16kHz × 11 秒 = 176,000 サンプル（10 秒超）
+        pcm = np.ones(176000, dtype=np.float32) * 0.1
         result = detector.detect(pcm, sample_rate=16000)
-        assert result.error is not None
-        assert "32000" in result.error
+        assert result.error == "Input exceeds maximum duration of 10.0 seconds"
+        assert result.is_bark is False
+        assert result.confidence == 0.0
+
+    def test_44_1kHz_10秒以内の入力がエラーなく処理されること(self):
+        """44.1kHz で 5 秒の入力（220,500 サンプル > 32,000）が入力長エラーにならないこと。"""
+        detector = BarkDetector()
+        # 44100Hz × 5 秒 = 220,500 サンプル
+        pcm = np.ones(220500, dtype=np.float32) * 0.1
+        result = detector.detect(pcm, sample_rate=44100)
+        # モデル未ロードなので "No model loaded" エラーが返るが、入力長エラーではない
+        assert result.error == "No model loaded"
+
+    def test_ちょうど10秒の入力がエラーにならないこと(self):
+        """ちょうど 10 秒の入力（境界値）が入力長エラーにならないこと。"""
+        detector = BarkDetector()
+        # 16000Hz × 10 秒 = 160,000 サンプル（duration == 10.0）
+        pcm = np.ones(160000, dtype=np.float32) * 0.1
+        result = detector.detect(pcm, sample_rate=16000)
+        # モデル未ロードなので "No model loaded" エラーが返るが、入力長エラーではない
+        assert result.error == "No model loaded"
+
+    def test_10秒をわずかに超える入力がエラーになること(self):
+        """10 秒をわずかに超える入力（境界値）が入力長エラーになること。"""
+        detector = BarkDetector()
+        # 16000Hz × 10 秒 + 1 サンプル = 160,001 サンプル（duration > 10.0）
+        pcm = np.ones(160001, dtype=np.float32) * 0.1
+        result = detector.detect(pcm, sample_rate=16000)
+        assert result.error == "Input exceeds maximum duration of 10.0 seconds"
+        assert result.is_bark is False
+        assert result.confidence == 0.0
 
     def test_detect_は_DetectionResult_を返すこと(self):
         """detect() の戻り値が DetectionResult のインスタンスであること。"""
@@ -153,24 +183,28 @@ def test_property_threshold_consistency(confidence: float, threshold: float) -> 
     assert result.error is None
 
 
-# Feature: bark-check, Property 3: 上限超過入力はエラー DetectionResult を返す
+# Feature: bark-check, Property 3: 時間長超過入力はエラー DetectionResult を返す
 @given(
-    length=st.integers(min_value=32001, max_value=64000),
+    sample_rate=st.integers(min_value=8000, max_value=48000),
+    duration=st.floats(min_value=10.01, max_value=30.0, allow_nan=False, allow_infinity=False),
 )
 @settings(max_examples=100)
-def test_property_oversized_input_returns_error(length: int) -> None:
-    """Validates: Requirements 2.8
+def test_property_oversized_input_returns_error(sample_rate: int, duration: float) -> None:
+    """Validates: Requirements 1.2, 2.1, 5.3
 
-    32001 サンプル以上の配列を渡したとき error が non-null になること。
+    時間長が 10 秒を超える入力を渡したとき、
+    error="Input exceeds maximum duration of 10.0 seconds",
+    is_bark=False, confidence=0.0 の DetectionResult が返ること。
     """
+    num_samples = int(sample_rate * duration)
     detector = BarkDetector()
-    pcm = np.zeros(length, dtype=np.float32)
-    result = detector.detect(pcm, sample_rate=16000)
+    pcm = np.ones(num_samples, dtype=np.float32) * 0.1
+    result = detector.detect(pcm, sample_rate)
 
     assert isinstance(result, DetectionResult)
-    assert result.error is not None
-    assert isinstance(result.error, str)
-    assert len(result.error) > 0
+    assert result.error == "Input exceeds maximum duration of 10.0 seconds"
+    assert result.is_bark is False
+    assert result.confidence == 0.0
 
 
 # Feature: bark-check, Property 6: 無音入力は常に confidence 0.0 の吠え声なしを返す
