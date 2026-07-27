@@ -9,7 +9,7 @@ bark-check は、音声ファイルを入力として犬の吠え声（bark）�
 ### 主要設計方針
 
 - **コアライブラリの完全独立性**: `BarkDetector` は CLI 固有の依存（argparse 等）を一切持たず、float32 モノラル PCM 配列 + サンプリングレートのみを入力とする純粋な関数型インターフェースを提供する。
-- **エラーを例外で伝播しない**: `BarkDetector` は推論エラーを含む全てのエラー情報を `DetectionResult.error` フィールドに格納し、呼び出し元に例外を伝播しない。
+- **detect() はエラーを例外で伝播しない**: `BarkDetector.detect()` は推論エラーを含む全てのエラー情報を `DetectionResult.error` フィールドに格納し、呼び出し元に例外を伝播しない。ただし初期化 (`__init__`) やエクスポート (`export_coreml`) など、失敗が致命的な操作は例外を送出する。
 - **ポータビリティ**: CoreML (.mlmodel) エクスポート機能を提供し、iOS アプリ等でのオフライン推論を可能にする。
 
 ---
@@ -58,7 +58,7 @@ graph TD
 
 ```python
 class BarkDetector:
-    """犬の吠え声を検出するコアライブラリ。CLI 依存を一切持たない。"""
+    """犬の吠え声を検出するコアライブラリ。"""
 
     def __init__(self, threshold: float = 0.5, model_path: str | None = None) -> None:
         """BarkDetector を初期化する。
@@ -93,6 +93,11 @@ class BarkDetector:
 
         Returns:
             エクスポートされたファイルのパス。
+
+        Raises:
+            ModelLoadError: モデルが読み込まれていない場合。
+            FileNotFoundError: モデルファイルが存在しない場合。
+            RuntimeError: CoreML 変換に失敗した場合。
         """
 ```
 
@@ -118,7 +123,7 @@ class FeatureExtractor:
 
 ```python
 class AudioLoader:
-    """音声ファイルをデコードしてモノラル PCM に変換する CLI レイヤーのモジュール。"""
+    """音声ファイルをデコードしてモノラル PCM に変換する。"""
 
     SUPPORTED_FORMATS = ("wav", "mp3", "flac", "ogg")
 
@@ -170,6 +175,28 @@ class DetectionResult:
 
         Returns:
             復元された DetectionResult。エラー時は error フィールドにメッセージを含む。
+        """
+```
+
+### CoreMLExporter
+
+```python
+class CoreMLExporter:
+    """ONNX モデルを CoreML 形式 (.mlmodel) にエクスポートする。"""
+
+    def export(self, model_path: str, output_path: str) -> str:
+        """ONNX モデルを CoreML 形式にエクスポートする。
+
+        Args:
+            model_path: 入力 ONNX モデルファイルのパス。
+            output_path: 出力 .mlmodel ファイルのパス。
+
+        Returns:
+            エクスポートされたファイルのパス。
+
+        Raises:
+            FileNotFoundError: model_path が存在しない場合。
+            RuntimeError: 変換に失敗した場合。
         """
 ```
 
@@ -337,14 +364,25 @@ options:
 
 ### BarkDetector のエラー処理方針
 
-`BarkDetector` は **例外を呼び出し元に伝播しない** 設計とする。全てのエラーは `DetectionResult.error` に格納される。
+`BarkDetector.detect()` は **例外を呼び出し元に伝播しない** 設計とする。全てのエラーは `DetectionResult.error` に格納される。一方、初期化 (`__init__`) やエクスポート (`export_coreml`) は、失敗が致命的であるため例外を送出する。
 
 | エラー条件 | `DetectionResult` の状態 |
 |---|---|
 | 空の PCM ブロック (length == 0) | `is_bark=False`, `confidence=0.0`, `error="Input PCM block is empty"` |
 | PCM 長が 32,000 超 | `is_bark=False`, `confidence=0.0`, `error="Input exceeds maximum length of 32000 samples"` |
 | 無音入力 (全ゼロ) | `is_bark=False`, `confidence=0.0`, `error=None` |
+| モデルが未ロード（session is None） | `is_bark=False`, `confidence=0.0`, `error="No model loaded"` |
 | 推論中ランタイムエラー | `is_bark=False`, `confidence=0.0`, `error="Inference error: <message>"` |
+
+**BarkDetector の例外送出（detect() 以外）**
+
+| メソッド | エラー条件 | 例外 |
+|---|---|---|
+| `__init__` | threshold が [0.0, 1.0] 範囲外 | `ValueError` |
+| `__init__` | model_path のファイルが存在しない / 読み込み失敗 | `ModelLoadError` |
+| `export_coreml` | モデルが未ロード | `ModelLoadError` |
+| `export_coreml` | モデルファイルが存在しない | `FileNotFoundError` |
+| `export_coreml` | CoreML 変換に失敗 | `RuntimeError` |
 
 ### CLI のエラー処理方針
 
@@ -369,6 +407,15 @@ FileNotFoundError     → CLI が終了コード 1 で処理
 UnsupportedFormatError → CLI が終了コード 2 で処理
 AudioLoadError         → CLI が終了コード 1 で処理
 ```
+
+### CoreMLExporter のエラー処理方針
+
+`CoreMLExporter.export()` は変換エラーを例外として送出する。呼び出し元（`BarkDetector.export_coreml()`）がそのまま伝播する。
+
+| エラー条件 | 例外 |
+|---|---|
+| model_path が存在しない | `FileNotFoundError` |
+| CoreML 変換に失敗 | `RuntimeError` |
 
 ---
 

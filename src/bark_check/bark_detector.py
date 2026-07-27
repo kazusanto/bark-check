@@ -18,7 +18,7 @@ class ModelLoadError(Exception):
 
 
 class BarkDetector:
-    """犬の吠え声を検出するコアライブラリ。CLI 依存を一切持たない。"""
+    """犬の吠え声を検出するコアライブラリ。"""
 
     def __init__(
         self,

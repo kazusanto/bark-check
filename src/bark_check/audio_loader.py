@@ -17,7 +17,7 @@ class AudioLoadError(Exception):
 
 
 class AudioLoader:
-    """音声ファイルをデコードしてモノラル PCM に変換する CLI レイヤーのモジュール。"""
+    """音声ファイルをデコードしてモノラル PCM に変換する。"""
 
     SUPPORTED_FORMATS = ("wav", "mp3", "flac", "ogg")
 
