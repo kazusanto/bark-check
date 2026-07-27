@@ -76,6 +76,20 @@ print(result.confidence)   # 0.0〜1.0
 print(result.error)        # None or エラーメッセージ
 ```
 
+## モデルの学習・生成
+
+推論に必要な ONNX モデルは、プロジェクト内の学習パイプラインで生成できる。
+
+```bash
+# 学習用依存のインストール
+pip install -e ".[train]"
+
+# モデル学習（ESC-50 自動ダウンロード → 学習 → ONNX エクスポート）
+python -m training
+```
+
+実行すると `models/bark_model.onnx` が生成される。詳細は [training/README.md](training/README.md) を参照。
+
 ## CoreML エクスポート
 
 iOS / macOS 向けに ONNX モデルを CoreML 形式に変換できる。
@@ -117,6 +131,11 @@ bark-check/
 │   ├── output_formatter.py    # 出力フォーマット（CLI）
 │   ├── coreml_exporter.py     # CoreML エクスポート
 │   └── main.py                # CLI エントリポイント
+├── training/                  # 学習パイプライン
+│   ├── config.py              # ハイパーパラメータ設定
+│   ├── dataset.py             # ESC-50 Dataset
+│   ├── model.py               # BarkCNN モデル定義
+│   └── train.py               # 学習 + ONNX エクスポート
 ├── tests/                     # pytest + hypothesis
 ├── models/                    # 学習済みモデル置き場
 └── pyproject.toml
