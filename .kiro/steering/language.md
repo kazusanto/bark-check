@@ -32,3 +32,35 @@
 - テーブル内のコード・型名（`bool`, `float`, `str` 等）
 - Kiro spec の規定フォーマットが定める固定表記・見出し（文書構造やチェッカーの動作に影響するもの）
 - Git コミットメッセージの subject line（1行目）は英語で記述する。body（2行目以降）は日本語でもよい
+
+## Git コミットメッセージ
+
+[Conventional Commits](https://www.conventionalcommits.org/) に準拠する。
+
+### フォーマット
+
+```
+<type>(<scope>): <subject>
+```
+
+- `<type>` は必須。以下のいずれかを使用する:
+  - `feat` — 新機能
+  - `fix` — バグ修正
+  - `refactor` — リファクタリング（機能変更なし・バグ修正なし）
+  - `docs` — ドキュメントのみの変更
+  - `test` — テストの追加・修正
+  - `chore` — ビルド・CI・依存関係など雑務
+  - `perf` — パフォーマンス改善
+  - `style` — フォーマット変更（コードの意味に影響しない）
+  - `ci` — CI 設定の変更
+- `<scope>` は任意。変更対象のモジュールや領域を示す（例: `training`, `cli`, `detector`）
+- `<subject>` は英語・小文字始まり・末尾にピリオドを付けない・命令形で記述する
+
+### 例
+
+```
+feat(detector): add confidence threshold parameter
+fix(training): lower ONNX opset_version to 9 for CoreML compatibility
+docs: update README with installation instructions
+refactor(cli): extract output formatting into separate module
+```
