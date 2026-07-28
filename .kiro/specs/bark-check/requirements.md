@@ -82,7 +82,6 @@ CLI レイヤーでは AudioLoader が音声ファイルをデコードしてモ
 2. THE BarkDetector SHALL 入力として float32 型のモノラル PCM サンプル配列とサンプリングレート（Hz）を受け取り、`is_bark`（真偽値）と `confidence`（0.0 以上 1.0 以下の浮動小数点数）を最低限含む DetectionResult を返すインターフェースを持つ
 3. THE FeatureExtractor SHALL 使用する特徴量の種類、サンプリングレート（Hz）、フレームサイズ（サンプル数）、フレームシフト（サンプル数）を設計ドキュメントに明記する
 4. THE BarkDetector SHALL 使用する事前学習済みモデルのアーキテクチャ、入力テンソルの形状と型、出力テンソルの形状と型を設計ドキュメントに明記する
-5. WHERE CoreML エクスポートが有効な場合, THE BarkDetector SHALL モデルを CoreML 仕様バージョン 4 以上の `.mlmodel` 形式にエクスポートし、エクスポートされたファイルのパスを返す機能を提供する
 
 ---
 

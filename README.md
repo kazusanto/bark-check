@@ -90,15 +90,6 @@ python -m training
 
 実行すると `models/bark_model.onnx` が生成される。詳細は [training/README.md](training/README.md) を参照。
 
-## CoreML エクスポート
-
-iOS / macOS 向けに ONNX モデルを CoreML 形式に変換できる。
-
-```python
-detector = BarkDetector(model_path="models/bark_model.onnx")
-path = detector.export_coreml("models/bark_model.mlmodel")
-```
-
 ## テスト
 
 ```bash
@@ -129,7 +120,6 @@ bark-check/
 │   ├── models.py              # DetectionResult
 │   ├── audio_loader.py        # 音声ファイルデコード（CLI）
 │   ├── output_formatter.py    # 出力フォーマット（CLI）
-│   ├── coreml_exporter.py     # CoreML エクスポート
 │   └── main.py                # CLI エントリポイント
 ├── training/                  # 学習パイプライン
 │   ├── config.py              # ハイパーパラメータ設定

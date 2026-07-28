@@ -9,8 +9,7 @@ bark-check は、音声ファイルを入力として犬の吠え声（bark）�
 ### 主要設計方針
 
 - **コアライブラリの完全独立性**: `BarkDetector` は CLI 固有の依存（argparse 等）を一切持たず、float32 モノラル PCM 配列 + サンプリングレートのみを入力とする純粋な関数型インターフェースを提供する。
-- **detect() はエラーを例外で伝播しない**: `BarkDetector.detect()` は推論エラーを含む全てのエラー情報を `DetectionResult.error` フィールドに格納し、呼び出し元に例外を伝播しない。ただし初期化 (`__init__`) やエクスポート (`export_coreml`) など、失敗が致命的な操作は例外を送出する。
-- **ポータビリティ**: CoreML (.mlmodel) エクスポート機能を提供し、iOS アプリ等でのオフライン推論を可能にする。
+- **detect() はエラーを例外で伝播しない**: `BarkDetector.detect()` は推論エラーを含む全てのエラー情報を `DetectionResult.error` フィールドに格納し、呼び出し元に例外を伝播しない。ただし初期化 (`__init__`) など、失敗が致命的な操作は例外を送出する。
 
 ---
 
@@ -29,11 +28,6 @@ graph TD
         E --> F[Pretrained Model<br/>bark_model.pt / bark_model.onnx]
         D --> G[DetectionResult<br/>models.py]
     end
-
-    subgraph Export
-        D --> H[CoreML Exporter<br/>coreml_exporter.py]
-        H --> I[bark_model.mlmodel]
-    end
 ```
 
 ### レイヤー構成
@@ -46,7 +40,6 @@ graph TD
 | Core | `bark_detector.py` | 犬の吠え声判定ロジック |
 | Core | `feature_extractor.py` | PCM → MFCC 特徴量抽出 |
 | Core | `models.py` | DetectionResult データモデル |
-| Export | `coreml_exporter.py` | CoreML (.mlmodel) エクスポート |
 
 ---
 
@@ -83,21 +76,6 @@ class BarkDetector:
 
         Returns:
             is_bark, confidence, timestamp, audio_duration, error を含む判定結果。
-        """
-
-    def export_coreml(self, output_path: str) -> str:
-        """モデルを CoreML 形式 (.mlmodel) にエクスポートする。
-
-        Args:
-            output_path: エクスポート先のファイルパス。
-
-        Returns:
-            エクスポートされたファイルのパス。
-
-        Raises:
-            ModelLoadError: モデルが読み込まれていない場合。
-            FileNotFoundError: モデルファイルが存在しない場合。
-            RuntimeError: CoreML 変換に失敗した場合。
         """
 ```
 
@@ -175,28 +153,6 @@ class DetectionResult:
 
         Returns:
             復元された DetectionResult。エラー時は error フィールドにメッセージを含む。
-        """
-```
-
-### CoreMLExporter
-
-```python
-class CoreMLExporter:
-    """ONNX モデルを CoreML 形式 (.mlmodel) にエクスポートする。"""
-
-    def export(self, model_path: str, output_path: str) -> str:
-        """ONNX モデルを CoreML 形式にエクスポートする。
-
-        Args:
-            model_path: 入力 ONNX モデルファイルのパス。
-            output_path: 出力 .mlmodel ファイルのパス。
-
-        Returns:
-            エクスポートされたファイルのパス。
-
-        Raises:
-            FileNotFoundError: model_path が存在しない場合。
-            RuntimeError: 変換に失敗した場合。
         """
 ```
 
@@ -283,14 +239,7 @@ options:
 | 出力テンソル形状 | `[1, 1]` (bark_probability) — float32 |
 | 最大入力長 | 時間長 10.0 秒以内（サンプリングレート非依存。モデルは Global Average Pooling により任意長対応） |
 
-> **設計判断**: モデルを ONNX 形式で保持することで、PyTorch 非依存の推論（`onnxruntime` のみ）と CoreML エクスポートの両方を実現する。iOS 向けには `coremltools` で ONNX → CoreML 変換を行う。
-
-### CoreML エクスポート仕様（Requirement 4.5 に対応）
-
-- CoreML 仕様バージョン: 4 以上 (`minimum_deployment_target` = iOS 13.0)
-- 入力: `pcm_features` (MultiArray, float32, shape `[1, T, 40]`)
-- 出力: `bark_probability` (MultiArray, float32, shape `[1, 1]`)
-- 変換ツール: `coremltools >= 7.0`
+> **設計判断**: モデルを ONNX 形式で保持することで、PyTorch 非依存の推論（`onnxruntime` のみ）を実現する。
 
 ---
 
@@ -364,7 +313,7 @@ options:
 
 ### BarkDetector のエラー処理方針
 
-`BarkDetector.detect()` は **例外を呼び出し元に伝播しない** 設計とする。全てのエラーは `DetectionResult.error` に格納される。一方、初期化 (`__init__`) やエクスポート (`export_coreml`) は、失敗が致命的であるため例外を送出する。
+`BarkDetector.detect()` は **例外を呼び出し元に伝播しない** 設計とする。全てのエラーは `DetectionResult.error` に格納される。一方、初期化 (`__init__`) は、失敗が致命的であるため例外を送出する。
 
 | エラー条件 | `DetectionResult` の状態 |
 |---|---|
@@ -380,9 +329,6 @@ options:
 |---|---|---|
 | `__init__` | threshold が [0.0, 1.0] 範囲外 | `ValueError` |
 | `__init__` | model_path のファイルが存在しない / 読み込み失敗 | `ModelLoadError` |
-| `export_coreml` | モデルが未ロード | `ModelLoadError` |
-| `export_coreml` | モデルファイルが存在しない | `FileNotFoundError` |
-| `export_coreml` | CoreML 変換に失敗 | `RuntimeError` |
 
 ### CLI のエラー処理方針
 
@@ -407,15 +353,6 @@ FileNotFoundError     → CLI が終了コード 1 で処理
 UnsupportedFormatError → CLI が終了コード 2 で処理
 AudioLoadError         → CLI が終了コード 1 で処理
 ```
-
-### CoreMLExporter のエラー処理方針
-
-`CoreMLExporter.export()` は変換エラーを例外として送出する。呼び出し元（`BarkDetector.export_coreml()`）がそのまま伝播する。
-
-| エラー条件 | 例外 |
-|---|---|
-| model_path が存在しない | `FileNotFoundError` |
-| CoreML 変換に失敗 | `RuntimeError` |
 
 ---
 
@@ -465,7 +402,6 @@ tests/
 | `test_cli_exit_code_no_bark` | CLI | 吠え声なし判定で終了コード 3 |
 | `test_cli_json_output` | CLI | `--json` で JSON が標準出力に出力されること |
 | `test_cli_threshold_option` | CLI | `--threshold 0.7` が BarkDetector に渡されること |
-| `test_coreml_export` | `BarkDetector` | `.mlmodel` ファイルが生成され、パスが返ること |
 | `test_model_load_failure` | CLI | モデル読み込み失敗で終了コード 4 |
 | `test_inference_latency` | `BarkDetector` | 2 秒の PCM で推論が 500ms 以内に完了すること（ベンチマーク） |
 

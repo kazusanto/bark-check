@@ -264,30 +264,3 @@ def test_property_inference_error_stored_in_result(error_message: str) -> None:
     assert "Inference error:" in result.error
     assert result.is_bark is False
 
-
-# ---- CoreML エクスポート テスト ----
-
-
-class TestBarkDetectorExportCoreml:
-    """BarkDetector.export_coreml() のユニットテスト。"""
-
-    def test_モデル未ロード時に_ModelLoadError_が発生すること(self):
-        """model_path=None の状態で export_coreml() を呼ぶと ModelLoadError が発生すること。"""
-        detector = BarkDetector()
-        with pytest.raises(ModelLoadError):
-            detector.export_coreml("/tmp/output.mlmodel")
-
-    def test_モデルロード済み時に_CoreMLExporter_が呼ばれること(self):
-        """セッションがある状態で export_coreml() を呼ぶと CoreMLExporter.export() が呼ばれること。"""
-        detector = BarkDetector()
-        detector._session = MagicMock()
-        detector._model_path = "/tmp/dummy_model.onnx"
-
-        with patch("bark_check.coreml_exporter.CoreMLExporter") as MockExporter:
-            mock_instance = MockExporter.return_value
-            mock_instance.export.return_value = "/tmp/output.mlmodel"
-
-            result = detector.export_coreml("/tmp/output.mlmodel")
-
-        mock_instance.export.assert_called_once_with("/tmp/dummy_model.onnx", "/tmp/output.mlmodel")
-        assert result == "/tmp/output.mlmodel"

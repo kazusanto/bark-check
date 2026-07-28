@@ -11,7 +11,6 @@ dependencies = [
     "soundfile",
     "librosa",
     "onnxruntime",
-    "coremltools>=7.0",
 ]
 
 [project.optional-dependencies]

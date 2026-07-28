@@ -2,7 +2,7 @@
 
 ## Overview
 
-bark-check の実装を、データモデル → コアロジック → CLI レイヤー → エクスポート機能の順に進める。
+bark-check の実装を、データモデル → コアロジック → CLI レイヤーの順に進める。
 各ステップは前のステップの成果物を前提とし、テストを通じてインクリメンタルに動作を確認する。
 設計書（design.md）の Correctness Properties に対応するプロパティベーステストを各実装タスクに付属させる。
 
@@ -11,7 +11,7 @@ bark-check の実装を、データモデル → コアロジック → CLI レ�
 ## Tasks
 
 - [x] 1. プロジェクト基盤のセットアップ
-  - `pyproject.toml` を作成し、依存関係（soundfile, librosa, onnxruntime, coremltools>=7.0, pytest, hypothesis）と CLI エントリポイント（`bark-check = "bark_check.main:main"`）を定義する
+  - `pyproject.toml` を作成し、依存関係（soundfile, librosa, onnxruntime, pytest, hypothesis）と CLI エントリポイント（`bark-check = "bark_check.main:main"`）を定義する
   - `src/bark_check/__init__.py` を作成してパッケージとして認識させる
   - `tests/__init__.py`、`tests/integration/__init__.py` を作成する
   - `models/` ディレクトリを作成し、`.gitkeep` を配置する
@@ -154,20 +154,6 @@ bark-check の実装を、データモデル → コアロジック → CLI レ�
 - [x] 10. チェックポイント — CLI を含む全テストが通ること
   - すべてのテストが通ることを確認する。問題があればユーザーに質問する。
 
-- [x] 11. CoreML エクスポート機能の実装
-  - [x] 11.1 `src/bark_check/coreml_exporter.py` に `CoreMLExporter` クラスを実装する
-    - `export(self, model_path: str, output_path: str) -> str` を実装する
-    - ONNX モデルを coremltools で CoreML 仕様バージョン 4 以上（minimum_deployment_target = iOS 13.0）の `.mlmodel` 形式に変換する
-    - 入力: `pcm_features` (MultiArray, float32, `[1, T, 40]`)
-    - 出力: `bark_probability` (MultiArray, float32, `[1, 1]`)
-    - `BarkDetector.export_coreml()` から `CoreMLExporter` を呼び出すように `bark_detector.py` を更新する
-    - docstring は日本語 Google スタイルで記述する
-    - _Requirements: 4.5_
-
-  - [x] 11.2 `tests/test_bark_detector.py` に CoreML エクスポートのユニットテストを追加する
-    - `export_coreml()` が `.mlmodel` ファイルを生成しパスを返すことをテストする（coremltools が利用可能な環境のみ）
-    - _Requirements: 4.5_
-
 - [x] 12. 最終チェックポイント — 全テストが通ること
   - すべてのテストが通ることを確認する。問題があればユーザーに質問する。
 
@@ -193,9 +179,7 @@ bark-check の実装を、データモデル → コアロジック → CLI レ�
     { "id": 3, "tasks": ["4.2", "5.1"] },
     { "id": 4, "tasks": ["5.2", "5.3", "5.4", "5.5", "5.6", "5.7", "7.1", "8.1"] },
     { "id": 5, "tasks": ["7.2", "9.1"] },
-    { "id": 6, "tasks": ["9.2", "9.3", "9.4"] },
-    { "id": 7, "tasks": ["11.1"] },
-    { "id": 8, "tasks": ["11.2"] }
+    { "id": 6, "tasks": ["9.2", "9.3", "9.4"] }
   ]
 }
 ```

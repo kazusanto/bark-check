@@ -156,24 +156,4 @@ class BarkDetector:
                 error=f"Inference error: {e}",
             )
 
-    def export_coreml(self, output_path: str) -> str:
-        """モデルを CoreML 形式 (.mlmodel) にエクスポートする。
 
-        Args:
-            output_path: エクスポート先のファイルパス。
-
-        Returns:
-            エクスポートされたファイルのパス。
-
-        Raises:
-            ModelLoadError: モデルが読み込まれていない場合。
-            FileNotFoundError: モデルファイルが存在しない場合。
-            RuntimeError: 変換に失敗した場合。
-        """
-        if self._session is None:
-            raise ModelLoadError("No model loaded")
-
-        from bark_check.coreml_exporter import CoreMLExporter
-
-        exporter = CoreMLExporter()
-        return exporter.export(self._model_path, output_path)
