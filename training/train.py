@@ -141,7 +141,7 @@ def export_onnx(model: nn.Module, config: TrainingConfig) -> None:
             "input": {0: "batch", 1: "frames"},
             "output": {0: "batch"},
         },
-        opset_version=17,
+        opset_version=9,
         dynamo=False,
     )
 
