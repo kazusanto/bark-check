@@ -21,6 +21,40 @@
 - エラーハンドリングの説明
 - テスト戦略の説明
 
+## EARS 構文の記述規則
+
+User Story および Acceptance Criteria は **Kiro デフォルト構文に準拠した日本語** で記述する。
+
+### User Story の書き方
+
+Kiro の標準 User Story フォーマット（As a / I want / so that）を使用する。キーワードは英語のまま、本文は日本語で記述する:
+
+```
+As a <ロール>, I want <欲しい機能や振る舞い>, so that <理由・目的>
+```
+
+例:
+- `As a 開発者, I want PcmBlock を渡すだけで犬の吠え声かどうかを判定したい, so that 手動でラベル付けする手間を省ける`
+- `As a iOS アプリ開発者, I want CoreML で正しく認識される 4D 入力形状のモデルが欲しい, so that Xcode でのモデル統合がスムーズに行える`
+
+### Acceptance Criteria の書き方
+
+EARS パターンのキーワードを混ぜた日本語で記述する:
+
+| パターン | 構文例 |
+|---|---|
+| Ubiquitous | `THE <主語> SHALL <動作>。` |
+| Event-driven | `WHEN <条件>, THE <主語> SHALL <動作>。` |
+| State-driven | `WHILE <状態>, THE <主語> SHALL <動作>。` |
+| Conditional | `IF <条件>, THEN THE <主語> SHALL <動作>。` |
+| Optional | `WHERE <機能が有効>, THE <主語> SHALL <動作>。` |
+| Quantified | `FOR ALL <対象>, THE <主語> SHALL <動作>。` |
+
+例:
+- `THE BarkCNN2d SHALL Conv2d レイヤーを kernel_size (3, 3) で使用し、pooling 前の空間次元を維持する`
+- `WHEN 抽出した MFCC フレーム数が 199 未満の場合, THE ESC50BarkDataset SHALL 時間軸に沿ってゼロパディングする`
+- `IF PcmBlock が空（サンプル数ゼロ）である場合, THEN THE BarkDetector SHALL 空入力エラーを示すエラー種別を含む DetectionResult を返す`
+
 ## 例外
 
 以下は英語・原文のまま維持する:
