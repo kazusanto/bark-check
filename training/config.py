@@ -50,6 +50,22 @@ class TrainingConfig:
     learning_rate: float = 1e-3
     """学習率。"""
 
+    # --- モデル・拡張設定 ---
+    fixed_frame_length: int = 199
+    """固定 MFCC フレーム数。1 以上の正の整数。"""
+
+    dropout_rate: float = 0.3
+    """Dropout 率。0.0 以上 1.0 未満。"""
+
+    use_augmentation: bool = True
+    """データ拡張の有効/無効。"""
+
+    model_type: str = "conv2d"
+    """モデルタイプ。"conv1d"（可変長、CLI 推論向け）または "conv2d"（固定長、CoreML 変換向け）。"""
+
+    augmentation_probability: float = 0.5
+    """各データ拡張の適用確率。0.0 以上 1.0 以下。"""
+
     # --- その他 ---
     random_seed: int = 42
     """再現性のための乱数シード。"""

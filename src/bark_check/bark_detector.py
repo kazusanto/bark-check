@@ -46,12 +46,21 @@ class BarkDetector:
         self._session = None
         self._model_path: str | None = model_path
         self._feature_extractor = FeatureExtractor()
+        self._fixed_length: int | None = None
+        self._channels_first: bool = False
+        self._is_4d: bool = False
+        self._model_format_error: str | None = None
 
         if model_path is not None:
             self._load_model(model_path)
 
     def _load_model(self, model_path: str) -> None:
-        """ONNX モデルを読み込む。
+        """ONNX モデルを読み込み、入力形状からモデル形式を判別する。
+
+        判別ロジック:
+        - input shape が [1, 40, N] → 固定長 channels-first モデル
+        - input shape が [1, T, 40] → 可変長 channels-last モデル
+        - それ以外 → self._model_format_error に格納
 
         Args:
             model_path: ONNX モデルファイルのパス。
@@ -70,6 +79,38 @@ class BarkDetector:
             self._session = ort.InferenceSession(model_path)
         except Exception as e:
             raise ModelLoadError(f"Failed to load model: {e}") from e
+
+        # 入力 shape メタデータからモデル形式を自動判別する
+        input_meta = self._session.get_inputs()[0]
+        shape = input_meta.shape  # e.g. [1, 1, 40, 199] or [1, 40, 199] or [1, 'T', 40]
+
+        if len(shape) == 4:
+            if shape[1] == 1 and shape[2] == 40:
+                # 4D: [1, 1, 40, N] (CoreML 互換、固定長)
+                self._fixed_length = shape[3] if isinstance(shape[3], int) else 199
+                self._channels_first = True
+                self._is_4d = True
+            else:
+                self._model_format_error = (
+                    f"Unsupported 4D model format: expected [1, 1, 40, N], got {shape}"
+                )
+        elif len(shape) == 3:
+            if shape[1] == 40:
+                # 3D channels-first: [1, 40, N] (固定長)
+                self._fixed_length = shape[2] if isinstance(shape[2], int) else 199
+                self._channels_first = True
+            elif shape[2] == 40:
+                # 3D channels-last: [1, T, 40] (可変長)
+                self._fixed_length = None
+                self._channels_first = False
+            else:
+                self._model_format_error = (
+                    "Unsupported model format: cannot determine channel position"
+                )
+        else:
+            self._model_format_error = (
+                f"Unsupported model format: input has {len(shape)} dimensions, expected 3 or 4"
+            )
 
     def detect(self, pcm: np.ndarray, sample_rate: int) -> DetectionResult:
         """モノラル PCM データから犬の吠え声を検出する。
@@ -126,11 +167,34 @@ class BarkDetector:
                 error="No model loaded",
             )
 
+        # モデル形式エラーチェック
+        if self._model_format_error is not None:
+            return DetectionResult(
+                is_bark=False,
+                confidence=0.0,
+                timestamp=timestamp,
+                audio_duration=audio_duration,
+                error=self._model_format_error,
+            )
+
         # 推論
         try:
-            features = self._feature_extractor.extract(pcm, sample_rate)
-            # 入力テンソル形状: [1, T, 40]（batch=1, frames, mfcc_dims）
-            input_tensor = features[np.newaxis, :, :].astype(np.float32)
+            if self._channels_first:
+                # 固定長 channels-first パス
+                features = self._feature_extractor.extract(
+                    pcm, sample_rate, fixed_length=self._fixed_length
+                )
+                # [199, 40] → [40, 199] → [1, 40, 199]
+                input_tensor = features.T[np.newaxis, :, :].astype(np.float32)
+
+                if self._is_4d:
+                    # [1, 40, 199] → [1, 1, 40, 199]
+                    input_tensor = input_tensor[:, np.newaxis, :, :]
+            else:
+                # 可変長 channels-last パス
+                features = self._feature_extractor.extract(pcm, sample_rate)
+                # [T, 40] → [1, T, 40]
+                input_tensor = features[np.newaxis, :, :].astype(np.float32)
 
             input_name = self._session.get_inputs()[0].name
             outputs = self._session.run(None, {input_name: input_tensor})

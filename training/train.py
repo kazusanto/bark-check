@@ -12,7 +12,8 @@ from torch.utils.data import DataLoader
 
 from training.config import TrainingConfig
 from training.dataset import ESC50BarkDataset, download_esc50
-from training.model import BarkCNN, count_parameters
+from training.model import BarkCNN, BarkCNN2d, count_parameters
+from training.onnx_validator import validate_onnx_for_coreml
 
 
 def _collate_fn(
@@ -42,6 +43,23 @@ def _collate_fn(
     features = torch.stack(padded)
     labels = torch.stack(labels_list)
 
+    return features, labels
+
+
+def _collate_fn_fixed(
+    batch: list[tuple[torch.Tensor, torch.Tensor]],
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """固定長テンソルをバッチ化する（パディング不要）。
+
+    Args:
+        batch: (features [40, 199], label [1]) のリスト。
+
+    Returns:
+        (features [B, 40, 199], labels [B, 1]) のタプル。
+    """
+    features_list, labels_list = zip(*batch)
+    features = torch.stack(features_list)
+    labels = torch.stack(labels_list)
     return features, labels
 
 
@@ -124,26 +142,37 @@ def export_onnx(model: nn.Module, config: TrainingConfig) -> None:
     """
     model.eval()
 
-    # ダミー入力（2秒 @ 16kHz → 約 199 フレーム）
-    # T は動的軸なので実際の値は重要ではない
-    dummy_frames = 199
-    dummy_input = torch.randn(1, dummy_frames, 40)
-
     config.output_model_path.parent.mkdir(parents=True, exist_ok=True)
 
-    torch.onnx.export(
-        model,
-        dummy_input,
-        str(config.output_model_path),
-        input_names=["input"],
-        output_names=["output"],
-        dynamic_axes={
-            "input": {0: "batch", 1: "frames"},
-            "output": {0: "batch"},
-        },
-        opset_version=9,
-        dynamo=False,
-    )
+    if config.model_type == "conv2d":
+        # BarkCNN2d: 4D channels-first 固定長入力、全軸静的
+        dummy_input = torch.randn(1, 1, 40, config.fixed_frame_length)
+        torch.onnx.export(
+            model,
+            dummy_input,
+            str(config.output_model_path),
+            input_names=["input"],
+            output_names=["output"],
+            opset_version=9,
+            dynamo=False,
+        )
+    else:
+        # BarkCNN: channels-last 可変長入力、動的軸あり
+        dummy_frames = 199
+        dummy_input = torch.randn(1, dummy_frames, 40)
+        torch.onnx.export(
+            model,
+            dummy_input,
+            str(config.output_model_path),
+            input_names=["input"],
+            output_names=["output"],
+            dynamic_axes={
+                "input": {0: "batch", 1: "frames"},
+                "output": {0: "batch"},
+            },
+            opset_version=9,
+            dynamo=False,
+        )
 
     print(f"ONNX モデルをエクスポートしました: {config.output_model_path}")
 
@@ -159,8 +188,14 @@ def verify_onnx(config: TrainingConfig) -> None:
     session = ort.InferenceSession(str(config.output_model_path))
     input_name = session.get_inputs()[0].name
 
-    # ダミー入力でサニティチェック
-    dummy_input = np.random.randn(1, 199, 40).astype(np.float32)
+    # モデルタイプに応じたダミー入力でサニティチェック
+    if config.model_type == "conv2d":
+        # BarkCNN2d: [1, 1, 40, 199] (4D channels-first)
+        dummy_input = np.random.randn(1, 1, 40, config.fixed_frame_length).astype(np.float32)
+    else:
+        # BarkCNN: [1, 199, 40] (channels-last)
+        dummy_input = np.random.randn(1, 199, 40).astype(np.float32)
+
     outputs = session.run(None, {input_name: dummy_input})
 
     result = outputs[0][0][0]
@@ -193,6 +228,13 @@ def main() -> None:
     parser.add_argument(
         "--output", type=str, default=None, help="出力 ONNX モデルパス"
     )
+    parser.add_argument(
+        "--model-type",
+        type=str,
+        default=None,
+        choices=["conv1d", "conv2d"],
+        help="モデルタイプ（デフォルト: conv2d）",
+    )
     args = parser.parse_args()
 
     # 設定の構築
@@ -211,6 +253,8 @@ def main() -> None:
         from pathlib import Path
 
         config.output_model_path = Path(args.output)
+    if args.model_type is not None:
+        config.model_type = args.model_type
 
     print("=" * 60)
     print("bark-check 学習パイプライン")
@@ -224,6 +268,7 @@ def main() -> None:
     print(f"  負例クラス: {config.negative_classes}")
     print(f"  バリデーション fold: {config.val_fold}")
     print(f"  出力先: {config.output_model_path}")
+    print(f"  モデルタイプ: {config.model_type}")
     print("=" * 60)
 
     # Step 1: データセットのダウンロード
@@ -241,26 +286,33 @@ def main() -> None:
     print(f"  学習サンプル数: {len(train_dataset)}")
     print(f"  バリデーションサンプル数: {len(val_dataset)}")
 
+    collate_fn = _collate_fn_fixed if config.model_type == "conv2d" else _collate_fn
+
     train_loader = DataLoader(
         train_dataset,
         batch_size=config.batch_size,
         shuffle=True,
-        collate_fn=_collate_fn,
+        collate_fn=collate_fn,
         num_workers=0,
     )
     val_loader = DataLoader(
         val_dataset,
         batch_size=config.batch_size,
         shuffle=False,
-        collate_fn=_collate_fn,
+        collate_fn=collate_fn,
         num_workers=0,
     )
 
     # Step 3: モデル構築
     print("\n[3/5] モデルの構築...")
-    model = BarkCNN()
+    if config.model_type == "conv2d":
+        model = BarkCNN2d(dropout_rate=config.dropout_rate)
+        model_name = "BarkCNN2d"
+    else:
+        model = BarkCNN()
+        model_name = "BarkCNN"
     num_params = count_parameters(model)
-    print(f"  モデル: BarkCNN ({num_params:,} parameters)")
+    print(f"  モデル: {model_name} ({num_params:,} parameters)")
 
     criterion = nn.BCELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
@@ -304,6 +356,19 @@ def main() -> None:
     print("\n[5/5] ONNX エクスポート...")
     export_onnx(model, config)
     verify_onnx(config)
+
+    # ONNX CoreML 互換性検証（conv2d）
+    if config.model_type == "conv2d":
+        import sys
+
+        errors = validate_onnx_for_coreml(str(config.output_model_path))
+        if errors:
+            print("\nONNX CoreML 互換性検証: 失敗", file=sys.stderr)
+            for err in errors:
+                print(f"  - {err}", file=sys.stderr)
+            sys.exit(1)
+        else:
+            print("\nONNX CoreML 互換性検証: 全項目合格 ✓")
 
     print("\n" + "=" * 60)
     print("完了！")

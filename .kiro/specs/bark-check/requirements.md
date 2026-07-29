@@ -11,6 +11,8 @@ BarkDetector は音声ファイルを一切扱わず、メモリ上のモノラ�
 
 CLI レイヤーでは AudioLoader が音声ファイルをデコードしてモノラル PCM に変換し、BarkDetector に渡す。
 
+学習パイプライン（`training/` ディレクトリ）は ESC-50 データセットを使用して犬の吠え声検出モデルを学習し、ONNX 形式でエクスポートする。Conv1d モデル（可変長 CLI 推論向け）と Conv2d モデル（CoreML 互換固定長向け）の 2 種類のアーキテクチャをサポートする。
+
 ## Glossary
 
 - **BarkDetector**: モノラル PCM サンプル列を入力として受け取り、犬の吠え声を検出するコアロジックモジュール
@@ -19,7 +21,16 @@ CLI レイヤーでは AudioLoader が音声ファイルをデコードしてモ
 - **DetectionResult**: 判定結果を表すデータ構造。吠え声の有無（boolean）、信頼度スコア（0.0〜1.0）、タイムスタンプ、音声長、エラー情報を含む
 - **CLI**: `bark-check` コマンドとして提供されるコマンドラインインターフェース
 - **ConfidenceScore**: BarkDetector が出力する予測の確からしさを示す 0.0 以上 1.0 以下の浮動小数点数
-- **FeatureExtractor**: PcmBlock から機械学習モデルへの入力特徴量（例: MFCC）を抽出するモジュール
+- **FeatureExtractor**: PcmBlock から機械学習モデルへの入力特徴量（MFCC）を抽出するモジュール
+- **BarkCNN**: Conv1d ベースの可変長入力対応モデル。CLI 推論に最適
+- **BarkCNN2d**: Conv2d ベースの固定長入力モデル。CoreML (iOS 12) 互換の ONNX エクスポート向け
+- **TrainingConfig**: 学習パイプラインのハイパーパラメータとパス設定を管理するデータクラス
+- **ESC50BarkDataset**: ESC-50 データセットから犬の吠え声の正例・負例を構築する PyTorch Dataset クラス
+- **OnnxValidator**: ONNX モデルの CoreML 互換性を検証するバリデータモジュール
+- **CoreML**: Apple の機械学習フレームワーク。iOS 12 以降で利用可能
+- **ONNX**: Open Neural Network Exchange。モデルの相互運用フォーマット
+- **Global_Average_Pooling**: 時間軸方向の平均を取ることで任意長入力を固定長ベクトルに変換するプーリング手法
+- **Data_Augmentation**: 学習データに変換（タイムシフト、ノイズ付加等）を適用して汎化性能を向上させる手法
 
 ---
 
@@ -111,3 +122,93 @@ CLI レイヤーでは AudioLoader が音声ファイルをデコードしてモ
 3. WHEN 有効な DetectionResult がシリアライズされてからデシリアライズされた場合, THE BarkDetector SHALL `confidence` を小数点以下 6 桁の精度、`timestamp` を秒単位の精度で保持し、元の DetectionResult と等価なオブジェクトを返す（ラウンドトリップ特性）
 4. IF 不正な JSON 文字列がデシリアライズに渡された場合, THEN THE BarkDetector SHALL `error` フィールドにパースエラーを示すメッセージを持つ DetectionResult を返し、処理前の状態を変更しない
 5. IF 必須フィールド（`is_bark`、`confidence`）を欠く JSON 文字列がデシリアライズに渡された場合, THEN THE BarkDetector SHALL `error` フィールドに欠落フィールド名を含むエラーメッセージを持つ DetectionResult を返す
+
+---
+
+### Requirement 7: 学習パイプライン
+
+**User Story:** As a 開発者, I want ESC-50 データセットで犬の吠え声検出モデルを学習したい, so that 独自の学習済みモデルを生成してアプリに組み込める
+
+#### Acceptance Criteria
+
+1. THE training pipeline SHALL ESC-50 データセットの自動ダウンロード・展開機能を提供し、既にダウンロード済みの場合はスキップする
+2. THE TrainingConfig SHALL model_type として "conv1d"（可変長 CLI 推論向け）または "conv2d"（固定長 CoreML 変換向け）を選択可能にする
+3. WHEN model_type が "conv2d" の場合, THE training pipeline SHALL BarkCNN2d インスタンスを生成し学習に使用する
+4. WHEN model_type が "conv1d" の場合, THE training pipeline SHALL BarkCNN インスタンスを生成し学習に使用する
+5. THE training pipeline SHALL 学習完了後に ONNX 形式（opset_version=9）でモデルをエクスポートする
+6. THE training pipeline SHALL ONNX エクスポート後に onnxruntime でサニティチェックを実行し、出力が 0.0〜1.0 の範囲内であることを確認する
+7. THE TrainingConfig SHALL エポック数、バッチサイズ、学習率、クロップ長、バリデーション fold、出力パスなどのハイパーパラメータを設定可能にする
+
+---
+
+### Requirement 8: Conv2d モデルアーキテクチャ（CoreML 互換）
+
+**User Story:** As a iOS アプリ開発者, I want coremltools 3.4 / onnx-coreml 1.3 で正しく変換できる ONNX モデルが欲しい, so that Xcode で CoreML モデルとしてインポートしてオフライン推論に使用できる
+
+#### Acceptance Criteria
+
+1. THE BarkCNN2d SHALL 入力テンソル shape [B, 1, 40, 199] を受け取り、内部で [B, 40, 1, 199] に permute する
+2. THE BarkCNN2d SHALL Conv2d(40, 64, (1,3), padding=(0,1)) → BatchNorm2d → ReLU → MaxPool2d((1,2)) を第 1 ブロックとして使用する
+3. THE BarkCNN2d SHALL Conv2d(64, 128, (1,3), padding=(0,1)) → BatchNorm2d → ReLU → MaxPool2d((1,2)) を第 2 ブロックとして使用する
+4. THE BarkCNN2d SHALL Conv2d(128, 128, (1,3), padding=(0,1)) → BatchNorm2d → ReLU を第 3 ブロックとして使用する
+5. THE BarkCNN2d SHALL AdaptiveAvgPool2d((1,1)) で空間次元を集約し、Dropout → Linear(128, 1) → Sigmoid で出力 shape [B, 1] を生成する
+6. THE BarkCNN2d SHALL 学習可能パラメータ数を 200,000 以下に抑える
+7. THE BarkCNN2d SHALL dropout_rate パラメータ（デフォルト 0.3）を受け取り、Dropout レイヤーに適用する
+
+---
+
+### Requirement 9: Conv1d モデルアーキテクチャ（可変長推論）
+
+**User Story:** As a 開発者, I want 可変長入力に対応した軽量モデルが欲しい, so that CLI で任意長の音声を効率的に推論できる
+
+#### Acceptance Criteria
+
+1. THE BarkCNN SHALL 入力テンソル shape [B, T, 40]（channels-last）を受け取り、内部で [B, 40, T]（channels-first）に permute する
+2. THE BarkCNN SHALL 3 層の Conv1d ブロック（Conv1d → BatchNorm1d → ReLU → MaxPool1d）を持つ
+3. THE BarkCNN SHALL Global Average Pooling（時間軸方向の mean）を使用して畳み込み出力を固定長ベクトルに集約する
+4. THE BarkCNN SHALL Linear(128, 1) → Sigmoid で出力を 0.0〜1.0 の確率値とする
+5. THE BarkCNN SHALL 可変長入力（任意の T）に対応し、動的軸付きで ONNX エクスポート可能とする
+
+---
+
+### Requirement 10: データ拡張
+
+**User Story:** As a 開発者, I want 学習時にデータ拡張を適用したい, so that 限られた ESC-50 データセットでも汎化性能の高いモデルを学習できる
+
+#### Acceptance Criteria
+
+1. WHILE 学習モード（`is_train=True`）である場合, THE ESC50BarkDataset SHALL 各サンプルに対してタイムシフト（±1600 サンプル、16kHz で ±100ms の範囲で一様分布に従いランダムシフトし、範囲外はゼロパディング）を適用確率に基づいて適用する
+2. WHILE 学習モード（`is_train=True`）である場合, THE ESC50BarkDataset SHALL 各サンプルに対してガウシアンノイズ付加（SNR 20〜40dB の範囲で一様分布に従い選択した SNR 値のノイズを加算）を適用確率に基づいて適用する
+3. WHILE バリデーションモード（`is_train=False`）である場合, THE ESC50BarkDataset SHALL タイムシフトおよびガウシアンノイズ付加を一切適用せず、決定論的な前処理のみを実行する
+4. THE ESC50BarkDataset SHALL データ拡張の適用確率を 0.0 以上 1.0 以下の範囲で設定可能とし、デフォルト値を 0.5 とする
+5. THE ESC50BarkDataset SHALL タイムシフトとガウシアンノイズ付加を互いに独立して適用確率に基づき判定し、MFCC 抽出前の波形レベルで適用する
+
+---
+
+### Requirement 11: ONNX CoreML 互換性検証
+
+**User Story:** As a 開発者, I want ONNX エクスポート後にモデルが CoreML 変換パイプラインの前提条件を満たすことを自動検証したい, so that 変換失敗を事前に検出できる
+
+#### Acceptance Criteria
+
+1. WHEN ONNX モデルがエクスポートされた場合, THE OnnxValidator SHALL 入力 shape が [1, 1, 40, 199] であることを検証する
+2. WHEN ONNX モデルがエクスポートされた場合, THE OnnxValidator SHALL 出力 shape が [1, 1] であることを検証する
+3. WHEN ONNX モデルがエクスポートされた場合, THE OnnxValidator SHALL opset_version が 9 であることを検証する
+4. WHEN ONNX モデルがエクスポートされた場合, THE OnnxValidator SHALL 全次元が固定整数値（dim_value）であり、動的軸（dim_param）が存在しないことを検証する
+5. WHEN ONNX モデルがエクスポートされた場合, THE OnnxValidator SHALL 使用オペレータが許可リスト（Conv, Relu, BatchNormalization, MaxPool, AveragePool, GlobalAveragePool, Reshape, Gemm, Sigmoid, Constant, Squeeze, Transpose）内であることを検証する
+6. IF いずれかの検証項目が失敗した場合, THEN THE training pipeline SHALL 全検証項目を実行した上で、失敗項目ごとの理由を含むエラーメッセージを stderr に出力し、終了コード 1 で終了する
+7. WHEN 全ての検証項目が成功した場合, THE training pipeline SHALL 検証合格を示すメッセージを stdout に出力する
+
+---
+
+### Requirement 12: BarkDetector モデル自動判別
+
+**User Story:** As a 開発者, I want BarkDetector がモデル形式を自動判別して適切に推論したい, so that モデル切り替え時に CLI やコアライブラリの変更が不要になる
+
+#### Acceptance Criteria
+
+1. WHEN ONNX モデルの入力 shape が [1, 1, 40, N]（4D）の場合, THE BarkDetector SHALL CoreML 互換固定長モデルとして認識し、4D channels-first 推論を実行する
+2. WHEN ONNX モデルの入力 shape が [1, 40, N]（3D、dim[1]=40）の場合, THE BarkDetector SHALL 固定長 channels-first モデルとして認識し、FeatureExtractor に fixed_length=N を指定して推論する
+3. WHEN ONNX モデルの入力 shape が [1, T, 40]（3D、dim[2]=40）の場合, THE BarkDetector SHALL 可変長 channels-last モデルとして認識し、可変長前処理で推論する
+4. IF ONNX モデルの入力 shape が上記いずれにも該当しない場合, THEN THE BarkDetector SHALL モデル形式を認識できないことを示すエラーを含む DetectionResult を返す
+5. THE BarkDetector SHALL いずれのモデル形式を使用した場合でも、DetectionResult インターフェース（is_bark, confidence, timestamp, audio_duration, error）のフィールド構成および各フィールドの型を変更しない

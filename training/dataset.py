@@ -13,6 +13,7 @@ import torch
 from torch.utils.data import Dataset
 
 from bark_check.feature_extractor import FeatureExtractor
+from training.augmentation import apply_gaussian_noise, apply_time_shift
 from training.config import TrainingConfig
 
 # ESC-50 リポジトリの ZIP ダウンロード URL
@@ -146,7 +147,10 @@ class ESC50BarkDataset(Dataset):
 
         Returns:
             (features, label) のタプル。
-            features: shape [T, 40] の MFCC テンソル (float32)。
+            model_type == "conv2d" の場合:
+                features: shape [1, 40, 199] の MFCC テンソル (float32, channels-first)。
+            model_type == "conv1d" の場合:
+                features: shape [T, 40] の MFCC テンソル (float32)。
             label: shape [1] のラベルテンソル (float32, 0.0 or 1.0)。
         """
         entry = self._entries[idx]
@@ -171,12 +175,31 @@ class ESC50BarkDataset(Dataset):
             pad_length = clip_samples - len(audio)
             audio = np.pad(audio, (0, pad_length), mode="constant")
 
-        # MFCC 特徴量抽出（既存の FeatureExtractor を共用）
         pcm = audio.astype(np.float32)
-        features = self._feature_extractor.extract(pcm, self._config.sample_rate)
 
-        # テンソルに変換
-        features_tensor = torch.from_numpy(features)  # [T, 40]
+        if self._config.model_type == "conv2d":
+            # データ拡張（学習時のみ）
+            if self._is_train and self._config.use_augmentation:
+                if np.random.random() < self._config.augmentation_probability:
+                    pcm = apply_time_shift(pcm)
+                if np.random.random() < self._config.augmentation_probability:
+                    pcm = apply_gaussian_noise(pcm)
+
+            # 固定長 MFCC 特徴量抽出
+            features = self._feature_extractor.extract(
+                pcm, self._config.sample_rate,
+                fixed_length=self._config.fixed_frame_length,
+            )
+
+            # channels-first に転置: [199, 40] → [40, 199]
+            features_tensor = torch.from_numpy(features).T
+            # チャンネル次元を追加: [40, 199] → [1, 40, 199]
+            features_tensor = features_tensor.unsqueeze(0)
+        else:
+            # conv1d パス: 可変長 MFCC（データ拡張なし、fixed_length なし）
+            features = self._feature_extractor.extract(pcm, self._config.sample_rate)
+            features_tensor = torch.from_numpy(features)  # [T, 40]
+
         label_tensor = torch.tensor([entry["label"]], dtype=torch.float32)  # [1]
 
         return features_tensor, label_tensor
