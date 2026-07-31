@@ -60,7 +60,7 @@ class TrainingConfig:
     use_augmentation: bool = True
     """データ拡張の有効/無効。"""
 
-    model_type: str = "conv2d"
+    model_type: str = "conv1d"
     """モデルタイプ。"conv1d"（可変長、CLI 推論向け）または "conv2d"（固定長、CoreML 変換向け）。"""
 
     augmentation_probability: float = 0.5

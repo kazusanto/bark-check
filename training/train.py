@@ -233,7 +233,7 @@ def main() -> None:
         type=str,
         default=None,
         choices=["conv1d", "conv2d"],
-        help="モデルタイプ（デフォルト: conv2d）",
+        help="モデルタイプ（デフォルト: conv1d）",
     )
     args = parser.parse_args()
 
