@@ -71,9 +71,11 @@ detector = BarkDetector(threshold=0.5, model_path="models/bark_model.onnx")
 pcm = np.random.randn(16000).astype(np.float32)
 result = detector.detect(pcm, sample_rate=16000)
 
-print(result.is_bark)      # True / False
-print(result.confidence)   # 0.0〜1.0
-print(result.error)        # None or エラーメッセージ
+print(result.is_bark)         # True / False
+print(result.confidence)      # 0.0〜1.0
+print(result.audio_duration)  # 音声長（秒）
+print(result.timestamp)       # 検出実行時刻（Unix time）
+print(result.error)           # None or エラーメッセージ
 ```
 
 ## モデルの学習・生成
@@ -124,7 +126,9 @@ bark-check/
 ├── training/                  # 学習パイプライン
 │   ├── config.py              # ハイパーパラメータ設定
 │   ├── dataset.py             # ESC-50 Dataset
-│   ├── model.py               # BarkCNN モデル定義
+│   ├── model.py               # BarkCNN / BarkCNN2d モデル定義
+│   ├── augmentation.py        # データ拡張
+│   ├── onnx_validator.py      # ONNX CoreML 互換性検証
 │   └── train.py               # 学習 + ONNX エクスポート
 ├── tests/                     # pytest + hypothesis
 ├── models/                    # 学習済みモデル置き場
