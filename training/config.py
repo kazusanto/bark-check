@@ -66,6 +66,25 @@ class TrainingConfig:
     augmentation_probability: float = 0.5
     """各データ拡張の適用確率。0.0 以上 1.0 以下。"""
 
+    # --- データソース設定 ---
+    data_sources: list[str] = field(default_factory=lambda: ["esc50"])
+    """使用するデータソースのリスト。有効値: "esc50", "urbansound8k"。"""
+
+    # --- UrbanSound8K 設定 ---
+    urbansound8k_dir: Path = field(default_factory=lambda: Path("data/UrbanSound8K"))
+    """UrbanSound8K データセットのディレクトリ。"""
+
+    urbansound8k_positive_classes: list[int] = field(default_factory=lambda: [3])
+    """UrbanSound8K の正例クラス。3=dog_bark。"""
+
+    urbansound8k_negative_classes: list[int] = field(
+        default_factory=lambda: [2, 8, 1, 5]
+    )
+    """UrbanSound8K の負例クラス。2=children_playing, 8=siren, 1=car_horn, 5=engine_idling。"""
+
+    urbansound8k_val_fold: int = 10
+    """UrbanSound8K のバリデーション fold 番号（1〜10）。"""
+
     # --- その他 ---
     random_seed: int = 42
     """再現性のための乱数シード。"""

@@ -1,0 +1,224 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 TrainingConfig に data_sources, urbansound8k_dir, urbansound8k_positive_classes, urbansound8k_negative_classes, urbansound8k_val_fold フィールドを追加する": [
+      {
+        "executionId": "edec26de-6ef4-4212-a8ae-bc37bc28c5dc",
+        "chatSessionId": "sess_01d83fef-9aea-4a56-be09-814c7f0b7b7a",
+        "timestamp": 1785570191368
+      },
+      {
+        "executionId": "edec26de-6ef4-4212-a8ae-bc37bc28c5dc",
+        "chatSessionId": "sess_01d83fef-9aea-4a56-be09-814c7f0b7b7a",
+        "timestamp": 1785570200652
+      },
+      {
+        "executionId": "edec26de-6ef4-4212-a8ae-bc37bc28c5dc",
+        "chatSessionId": "sess_01d83fef-9aea-4a56-be09-814c7f0b7b7a",
+        "timestamp": 1785570262393
+      }
+    ],
+    "2.1 `training/dataset_base.py` に BarkDatasetBase を実装する": [
+      {
+        "executionId": "edec26de-6ef4-4212-a8ae-bc37bc28c5dc",
+        "chatSessionId": "sess_01d83fef-9aea-4a56-be09-814c7f0b7b7a",
+        "timestamp": 1785570191435
+      },
+      {
+        "executionId": "edec26de-6ef4-4212-a8ae-bc37bc28c5dc",
+        "chatSessionId": "sess_01d83fef-9aea-4a56-be09-814c7f0b7b7a",
+        "timestamp": 1785570270592
+      },
+      {
+        "executionId": "edec26de-6ef4-4212-a8ae-bc37bc28c5dc",
+        "chatSessionId": "sess_01d83fef-9aea-4a56-be09-814c7f0b7b7a",
+        "timestamp": 1785570380258
+      }
+    ],
+    "3.1 `training/dataset.py` の ESC50BarkDataset を BarkDatasetBase 継承に書き換える": [
+      {
+        "executionId": "edec26de-6ef4-4212-a8ae-bc37bc28c5dc",
+        "chatSessionId": "sess_01d83fef-9aea-4a56-be09-814c7f0b7b7a",
+        "timestamp": 1785570191459
+      },
+      {
+        "executionId": "edec26de-6ef4-4212-a8ae-bc37bc28c5dc",
+        "chatSessionId": "sess_01d83fef-9aea-4a56-be09-814c7f0b7b7a",
+        "timestamp": 1785570388717
+      },
+      {
+        "executionId": "edec26de-6ef4-4212-a8ae-bc37bc28c5dc",
+        "chatSessionId": "sess_01d83fef-9aea-4a56-be09-814c7f0b7b7a",
+        "timestamp": 1785570485325
+      }
+    ],
+    "4. Checkpoint - 基底クラスとリファクタリングの動作確認": [
+      {
+        "executionId": "edec26de-6ef4-4212-a8ae-bc37bc28c5dc",
+        "chatSessionId": "sess_01d83fef-9aea-4a56-be09-814c7f0b7b7a",
+        "timestamp": 1785570191482
+      },
+      {
+        "executionId": "edec26de-6ef4-4212-a8ae-bc37bc28c5dc",
+        "chatSessionId": "sess_01d83fef-9aea-4a56-be09-814c7f0b7b7a",
+        "timestamp": 1785570574940
+      },
+      {
+        "executionId": "edec26de-6ef4-4212-a8ae-bc37bc28c5dc",
+        "chatSessionId": "sess_01d83fef-9aea-4a56-be09-814c7f0b7b7a",
+        "timestamp": 1785570622540
+      }
+    ],
+    "5.1 `training/dataset_urbansound8k.py` に UrbanSound8KBarkDataset を実装する": [
+      {
+        "executionId": "edec26de-6ef4-4212-a8ae-bc37bc28c5dc",
+        "chatSessionId": "sess_01d83fef-9aea-4a56-be09-814c7f0b7b7a",
+        "timestamp": 1785570191501
+      },
+      {
+        "executionId": "edec26de-6ef4-4212-a8ae-bc37bc28c5dc",
+        "chatSessionId": "sess_01d83fef-9aea-4a56-be09-814c7f0b7b7a",
+        "timestamp": 1785570493438
+      },
+      {
+        "executionId": "edec26de-6ef4-4212-a8ae-bc37bc28c5dc",
+        "chatSessionId": "sess_01d83fef-9aea-4a56-be09-814c7f0b7b7a",
+        "timestamp": 1785570558715
+      }
+    ],
+    "6.1 `training/dataset_factory.py` に `build_dataset()`, `_validate_config()`, `_check_urbansound8k_available()`, `_apply_class_balance()` を実装する": [
+      {
+        "executionId": "edec26de-6ef4-4212-a8ae-bc37bc28c5dc",
+        "chatSessionId": "sess_01d83fef-9aea-4a56-be09-814c7f0b7b7a",
+        "timestamp": 1785570191527
+      },
+      {
+        "executionId": "edec26de-6ef4-4212-a8ae-bc37bc28c5dc",
+        "chatSessionId": "sess_01d83fef-9aea-4a56-be09-814c7f0b7b7a",
+        "timestamp": 1785570637042
+      },
+      {
+        "executionId": "edec26de-6ef4-4212-a8ae-bc37bc28c5dc",
+        "chatSessionId": "sess_01d83fef-9aea-4a56-be09-814c7f0b7b7a",
+        "timestamp": 1785571043309
+      }
+    ],
+    "7.1 train.py に `--data-sources` CLI 引数を追加し、データセット構築を `build_dataset()` に委譲する": [
+      {
+        "executionId": "edec26de-6ef4-4212-a8ae-bc37bc28c5dc",
+        "chatSessionId": "sess_01d83fef-9aea-4a56-be09-814c7f0b7b7a",
+        "timestamp": 1785570191548
+      },
+      {
+        "executionId": "edec26de-6ef4-4212-a8ae-bc37bc28c5dc",
+        "chatSessionId": "sess_01d83fef-9aea-4a56-be09-814c7f0b7b7a",
+        "timestamp": 1785571048932
+      },
+      {
+        "executionId": "edec26de-6ef4-4212-a8ae-bc37bc28c5dc",
+        "chatSessionId": "sess_01d83fef-9aea-4a56-be09-814c7f0b7b7a",
+        "timestamp": 1785571188791
+      }
+    ],
+    "8. Checkpoint - 全体統合の動作確認": [
+      {
+        "executionId": "edec26de-6ef4-4212-a8ae-bc37bc28c5dc",
+        "chatSessionId": "sess_01d83fef-9aea-4a56-be09-814c7f0b7b7a",
+        "timestamp": 1785570191575
+      },
+      {
+        "executionId": "edec26de-6ef4-4212-a8ae-bc37bc28c5dc",
+        "chatSessionId": "sess_01d83fef-9aea-4a56-be09-814c7f0b7b7a",
+        "timestamp": 1785571194784
+      },
+      {
+        "executionId": "edec26de-6ef4-4212-a8ae-bc37bc28c5dc",
+        "chatSessionId": "sess_01d83fef-9aea-4a56-be09-814c7f0b7b7a",
+        "timestamp": 1785571258756
+      }
+    ],
+    "10.1 `training/README.md` に UrbanSound8K データソースの使い方、CLI 引数 `--data-sources`、手動ダウンロード手順を追記する": [
+      {
+        "executionId": "edec26de-6ef4-4212-a8ae-bc37bc28c5dc",
+        "chatSessionId": "sess_01d83fef-9aea-4a56-be09-814c7f0b7b7a",
+        "timestamp": 1785570191597
+      },
+      {
+        "executionId": "edec26de-6ef4-4212-a8ae-bc37bc28c5dc",
+        "chatSessionId": "sess_01d83fef-9aea-4a56-be09-814c7f0b7b7a",
+        "timestamp": 1785571264766
+      },
+      {
+        "executionId": "edec26de-6ef4-4212-a8ae-bc37bc28c5dc",
+        "chatSessionId": "sess_01d83fef-9aea-4a56-be09-814c7f0b7b7a",
+        "timestamp": 1785571356499
+      }
+    ],
+    "11. Final checkpoint - 全テストパスと後方互換性の最終確認": [
+      {
+        "executionId": "edec26de-6ef4-4212-a8ae-bc37bc28c5dc",
+        "chatSessionId": "sess_01d83fef-9aea-4a56-be09-814c7f0b7b7a",
+        "timestamp": 1785570191616
+      },
+      {
+        "executionId": "edec26de-6ef4-4212-a8ae-bc37bc28c5dc",
+        "chatSessionId": "sess_01d83fef-9aea-4a56-be09-814c7f0b7b7a",
+        "timestamp": 1785571361654
+      },
+      {
+        "executionId": "edec26de-6ef4-4212-a8ae-bc37bc28c5dc",
+        "chatSessionId": "sess_01d83fef-9aea-4a56-be09-814c7f0b7b7a",
+        "timestamp": 1785571592780
+      }
+    ],
+    "1. TrainingConfig へのデータソース設定追加": [
+      {
+        "executionId": "edec26de-6ef4-4212-a8ae-bc37bc28c5dc",
+        "chatSessionId": "sess_01d83fef-9aea-4a56-be09-814c7f0b7b7a",
+        "timestamp": 1785570262415
+      }
+    ],
+    "2. BarkDatasetBase 抽象基底クラスの実装": [
+      {
+        "executionId": "edec26de-6ef4-4212-a8ae-bc37bc28c5dc",
+        "chatSessionId": "sess_01d83fef-9aea-4a56-be09-814c7f0b7b7a",
+        "timestamp": 1785570380280
+      }
+    ],
+    "3. ESC50BarkDataset のリファクタリング": [
+      {
+        "executionId": "edec26de-6ef4-4212-a8ae-bc37bc28c5dc",
+        "chatSessionId": "sess_01d83fef-9aea-4a56-be09-814c7f0b7b7a",
+        "timestamp": 1785570485359
+      }
+    ],
+    "5. UrbanSound8KBarkDataset の実装": [
+      {
+        "executionId": "edec26de-6ef4-4212-a8ae-bc37bc28c5dc",
+        "chatSessionId": "sess_01d83fef-9aea-4a56-be09-814c7f0b7b7a",
+        "timestamp": 1785570558740
+      }
+    ],
+    "6. DatasetFactory の実装": [
+      {
+        "executionId": "edec26de-6ef4-4212-a8ae-bc37bc28c5dc",
+        "chatSessionId": "sess_01d83fef-9aea-4a56-be09-814c7f0b7b7a",
+        "timestamp": 1785571043341
+      }
+    ],
+    "7. train.py の CLI 引数追加と build_dataset() 統合": [
+      {
+        "executionId": "edec26de-6ef4-4212-a8ae-bc37bc28c5dc",
+        "chatSessionId": "sess_01d83fef-9aea-4a56-be09-814c7f0b7b7a",
+        "timestamp": 1785571188820
+      }
+    ],
+    "10. README の更新": [
+      {
+        "executionId": "edec26de-6ef4-4212-a8ae-bc37bc28c5dc",
+        "chatSessionId": "sess_01d83fef-9aea-4a56-be09-814c7f0b7b7a",
+        "timestamp": 1785571356517
+      }
+    ]
+  }
+}

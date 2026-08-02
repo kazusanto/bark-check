@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import sys
 import time
 
 import numpy as np
@@ -11,7 +12,8 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 
 from training.config import TrainingConfig
-from training.dataset import ESC50BarkDataset, download_esc50
+from training.dataset import download_esc50
+from training.dataset_factory import build_dataset
 from training.model import BarkCNN, BarkCNN2d, count_parameters
 from training.onnx_validator import validate_onnx_for_coreml
 
@@ -235,6 +237,12 @@ def main() -> None:
         choices=["conv1d", "conv2d"],
         help="モデルタイプ（デフォルト: conv1d）",
     )
+    parser.add_argument(
+        "--data-sources",
+        type=str,
+        default=None,
+        help="使用するデータソース（カンマ区切り）。例: esc50,urbansound8k",
+    )
     args = parser.parse_args()
 
     # 設定の構築
@@ -255,6 +263,8 @@ def main() -> None:
         config.output_model_path = Path(args.output)
     if args.model_type is not None:
         config.model_type = args.model_type
+    if args.data_sources is not None:
+        config.data_sources = [s.strip() for s in args.data_sources.split(",")]
 
     print("=" * 60)
     print("bark-check 学習パイプライン")
@@ -264,24 +274,39 @@ def main() -> None:
     print(f"  学習率: {config.learning_rate}")
     print(f"  クロップ長: {config.clip_duration_sec}s")
     print(f"  サンプリングレート: {config.sample_rate} Hz")
-    print(f"  正例クラス: {config.positive_classes}")
-    print(f"  負例クラス: {config.negative_classes}")
-    print(f"  バリデーション fold: {config.val_fold}")
-    print(f"  出力先: {config.output_model_path}")
     print(f"  モデルタイプ: {config.model_type}")
+    print(f"  データソース: {config.data_sources}")
+    print(f"  出力先: {config.output_model_path}")
     print("=" * 60)
 
-    # Step 1: データセットのダウンロード
-    print("\n[1/5] ESC-50 データセットの準備...")
-    download_esc50(config.data_dir)
+    # Step 1: データセットの準備
+    print("\n[1/5] データセットの準備...")
+    for source in config.data_sources:
+        if source == "esc50":
+            print("  [esc50]")
+            print(f"    ディレクトリ: {config.data_dir}")
+            print(f"    正例クラス: {config.positive_classes}")
+            print(f"    負例クラス: {config.negative_classes}")
+            print(f"    バリデーション fold: {config.val_fold}")
+            download_esc50(config.data_dir)
+        elif source == "urbansound8k":
+            print("  [urbansound8k]")
+            print(f"    ディレクトリ: {config.urbansound8k_dir}")
+            print(f"    正例クラス: {config.urbansound8k_positive_classes}")
+            print(f"    負例クラス: {config.urbansound8k_negative_classes}")
+            print(f"    バリデーション fold: {config.urbansound8k_val_fold}")
 
     # Step 2: データセット構築
     print("\n[2/5] データセットの構築...")
     torch.manual_seed(config.random_seed)
     np.random.seed(config.random_seed)
 
-    train_dataset = ESC50BarkDataset(config, is_train=True)
-    val_dataset = ESC50BarkDataset(config, is_train=False)
+    try:
+        train_dataset = build_dataset(config, is_train=True)
+        val_dataset = build_dataset(config, is_train=False)
+    except (ValueError, FileNotFoundError) as e:
+        print(f"\nエラー: {e}", file=sys.stderr)
+        sys.exit(1)
 
     print(f"  学習サンプル数: {len(train_dataset)}")
     print(f"  バリデーションサンプル数: {len(val_dataset)}")
@@ -359,8 +384,6 @@ def main() -> None:
 
     # ONNX CoreML 互換性検証（conv2d）
     if config.model_type == "conv2d":
-        import sys
-
         errors = validate_onnx_for_coreml(str(config.output_model_path))
         if errors:
             print("\nONNX CoreML 互換性検証: 失敗", file=sys.stderr)

@@ -46,6 +46,12 @@ python -m training --output models/my_model.onnx
 
 # データディレクトリを変更
 python -m training --data-dir /path/to/ESC-50-master
+
+# データソースを指定（ESC-50 + UrbanSound8K）
+python -m training --data-sources esc50,urbansound8k
+
+# ESC-50 のみ（デフォルト動作と同じ）
+python -m training --data-sources esc50
 ```
 
 ### `--model-type`
@@ -65,7 +71,46 @@ python -m training --data-dir /path/to/ESC-50-master
 - 50 クラス × 40 クリップ = 2,000 クリップ（各 5 秒、44.1kHz WAV）
 - 5-fold cross-validation 構成
 
-### クラス構成
+### UrbanSound8K
+
+- URL: https://urbansounddataset.weebly.com/urbansound8k.html
+- 10 クラス × 10-fold = 8,732 クリップ（各 4 秒以下、WAV）
+- ライセンス: Creative Commons Attribution Non-Commercial 4.0 (CC BY-NC 4.0)
+
+**重要:** UrbanSound8K はライセンスの制約により自動ダウンロードを行いません。手動でダウンロードしてください。
+
+#### ダウンロード手順
+
+1. [UrbanSound8K ダウンロードページ](https://urbansounddataset.weebly.com/urbansound8k.html) にアクセス
+2. データセットをダウンロードして以下の構成で配置:
+
+```
+data/UrbanSound8K/
+├── metadata/
+│   └── UrbanSound8K.csv
+└── audio/
+    ├── fold1/
+    ├── fold2/
+    ├── ...
+    └── fold10/
+```
+
+#### 使用クラス（デフォルト）
+
+**正例 (label=1):**
+| classID | クラス名 | 説明 |
+|---|---|---|
+| 3 | dog_bark | 犬の吠え声 |
+
+**負例 (label=0):**
+| classID | クラス名 | 説明 |
+|---|---|---|
+| 1 | car_horn | クラクション |
+| 2 | children_playing | 子供の遊び声 |
+| 5 | engine_idling | エンジンのアイドリング音 |
+| 8 | siren | サイレン |
+
+### クラス構成（ESC-50）
 
 **正例 (label=1):**
 | クラス番号 | カテゴリ | 説明 |
@@ -139,11 +184,16 @@ Linear(128, 1) → Sigmoid
 
 ```
 training/
-├── __init__.py      # パッケージ初期化
-├── __main__.py      # エントリポイント
-├── config.py        # ハイパーパラメータ設定
-├── dataset.py       # データセット準備・Dataset クラス
-├── model.py         # BarkCNN モデル定義
-├── train.py         # 学習ループ + ONNX エクスポート
-└── README.md        # このファイル
+├── __init__.py              # パッケージ初期化
+├── __main__.py              # エントリポイント
+├── augmentation.py          # データ拡張関数
+├── config.py                # ハイパーパラメータ設定
+├── dataset.py               # ESC50BarkDataset
+├── dataset_base.py          # BarkDatasetBase 抽象基底クラス
+├── dataset_factory.py       # DatasetFactory
+├── dataset_urbansound8k.py  # UrbanSound8KBarkDataset
+├── model.py                 # BarkCNN / BarkCNN2d モデル定義
+├── onnx_validator.py        # ONNX CoreML 互換性検証
+├── train.py                 # 学習ループ + ONNX エクスポート
+└── README.md                # このファイル
 ```
