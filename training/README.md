@@ -142,6 +142,7 @@ Conv1d(40, 64, k=3) → BN → ReLU → MaxPool(2)
 Conv1d(64, 128, k=3) → BN → ReLU → MaxPool(2)
 Conv1d(128, 128, k=3) → BN → ReLU
   ↓ Global Average Pooling
+  ↓ Dropout
 Linear(128, 1) → Sigmoid
 出力: [batch, 1] (吠え声確率)
 ```

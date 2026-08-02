@@ -106,9 +106,10 @@ sequenceDiagram
     Aug->>Aug: GaussianNoise (SNR 20-40dB, p=0.5)
     Aug->>FE: Augmented PCM
     FE->>FE: MFCC 抽出 → [T, 40]
-    FE->>FE: 固定長化 → [199, 40] (conv2d時)
+    FE->>FE: conv2d: 固定長化 → [199, 40]
     FE->>DS: Features
     DS->>DS: conv2d: transpose → [1, 40, 199]
+    DS->>DS: conv1d: そのまま [T, 40]
     DS->>Model: Batch tensor
     Model->>Model: Forward pass → [B, 1]
 ```
@@ -211,8 +212,10 @@ class BarkCNN(nn.Module):
     """可変長入力 1D CNN。入力: [B, T, 40] → 出力: [B, 1]
     構成: permute → Conv1d(40,64,3) → BN → ReLU → MaxPool(2)
          → Conv1d(64,128,3) → BN → ReLU → MaxPool(2)
-         → Conv1d(128,128,3) → BN → ReLU → GAP → Linear(128,1) → Sigmoid
+         → Conv1d(128,128,3) → BN → ReLU → GAP → Dropout → Linear(128,1) → Sigmoid
     """
+    def __init__(self, dropout_rate: float = 0.3) -> None: ...
+    def forward(self, x: torch.Tensor) -> torch.Tensor: ...
 ```
 
 ### BarkCNN2d（Conv2d CoreML 互換モデル）
@@ -439,7 +442,9 @@ options:
 | dynamic_axes | あり | なし（全軸静的） |
 | CoreML 互換 | ✗ | ✓ (opset 9) |
 | パラメータ数 | ~82,000 | ~82,497 |
-| Dropout | なし | あり (0.3) |
+| Dropout | あり (0.3) | あり (0.3) |
+| 学習時 MFCC | 可変長 | 固定長 (199) |
+| データ拡張 | あり | あり |
 | 用途 | CLI 推論 | iOS アプリ |
 
 ### ONNX エクスポート仕様（Conv2d）

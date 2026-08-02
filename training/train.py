@@ -18,7 +18,7 @@ from training.model import BarkCNN, BarkCNN2d, count_parameters
 from training.onnx_validator import validate_onnx_for_coreml
 
 
-def _collate_fn(
+def _collate_fn_variable(
     batch: list[tuple[torch.Tensor, torch.Tensor]],
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """可変長の MFCC テンソルをゼロパディングでバッチ化する。
@@ -54,10 +54,10 @@ def _collate_fn_fixed(
     """固定長テンソルをバッチ化する（パディング不要）。
 
     Args:
-        batch: (features [40, 199], label [1]) のリスト。
+        batch: (features [1, 40, 199], label [1]) のリスト。
 
     Returns:
-        (features [B, 40, 199], labels [B, 1]) のタプル。
+        (features [B, 1, 40, 199], labels [B, 1]) のタプル。
     """
     features_list, labels_list = zip(*batch)
     features = torch.stack(features_list)
@@ -311,7 +311,7 @@ def main() -> None:
     print(f"  学習サンプル数: {len(train_dataset)}")
     print(f"  バリデーションサンプル数: {len(val_dataset)}")
 
-    collate_fn = _collate_fn_fixed if config.model_type == "conv2d" else _collate_fn
+    collate_fn = _collate_fn_fixed if config.model_type == "conv2d" else _collate_fn_variable
 
     train_loader = DataLoader(
         train_dataset,
@@ -334,7 +334,7 @@ def main() -> None:
         model = BarkCNN2d(dropout_rate=config.dropout_rate)
         model_name = "BarkCNN2d"
     else:
-        model = BarkCNN()
+        model = BarkCNN(dropout_rate=config.dropout_rate)
         model_name = "BarkCNN"
     num_params = count_parameters(model)
     print(f"  モデル: {model_name} ({num_params:,} parameters)")

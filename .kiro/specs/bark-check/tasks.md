@@ -116,8 +116,9 @@ bark-check の完全な実装計画。CLI 推論パイプラインと学習パ�
 
 - [x] 14. Conv1d モデル（BarkCNN）の実装
   - [x] 14.1 `training/model.py` に `BarkCNN` クラスを実装する
-    - 入力 [B, T, 40] → permute → Conv1d ブロック ×3 → GAP → Linear → Sigmoid
-    - _Requirements: 9.1-9.5_
+    - 入力 [B, T, 40] → permute → Conv1d ブロック ×3 → GAP → Dropout → Linear → Sigmoid
+    - dropout_rate パラメータ（デフォルト 0.3）
+    - _Requirements: 9.1-9.6_
   - [x] 14.2 `training/train.py` に学習ループ（train_one_epoch, evaluate）を実装する
     - 可変長 collate 関数（ゼロパディング）
     - _Requirements: 7.4_
@@ -182,7 +183,7 @@ bark-check の完全な実装計画。CLI 推論パイプラインと学習パ�
     - torch.utils.data.Dataset と ABC を継承
     - 抽象メソッド load_entries(), _get_val_fold() を定義
     - __getitem__ で共通パイプライン（音声読み込み、クロップ/パディング、データ拡張、MFCC 抽出）を実装
-    - model_type に応じた特徴量出力（conv2d: [1,40,199], conv1d: [T,40]）
+    - model_type に応じた特徴量テンソル変換（conv2d: [1,40,199], conv1d: [T,40]）
     - _Requirements: 15.1, 15.2, 15.3, 15.4, 15.5, 15.6, 13.2_
   - [x] 20.3 `training/dataset_urbansound8k.py` に UrbanSound8KBarkDataset を実装する
     - BarkDatasetBase を継承し、load_entries() で UrbanSound8K メタデータ CSV からエントリを構築する

@@ -13,13 +13,18 @@ class BarkCNN(nn.Module):
     出力: [batch, 1] (吠え声確率, 0.0〜1.0)
 
     構成:
-        Conv1d(40, 64) → BN → ReLU → Conv1d(64, 128) → BN → ReLU →
+        Conv1d(40, 64) → BN → ReLU → MaxPool1d →
+        Conv1d(64, 128) → BN → ReLU → MaxPool1d →
         Conv1d(128, 128) → BN → ReLU → Global Average Pooling →
-        Linear(128, 1) → Sigmoid
+        Dropout → Linear(128, 1) → Sigmoid
     """
 
-    def __init__(self) -> None:
-        """BarkCNN を初期化する。"""
+    def __init__(self, dropout_rate: float = 0.3) -> None:
+        """BarkCNN を初期化する。
+
+        Args:
+            dropout_rate: Dropout 率。0.0 以上 1.0 未満。
+        """
         super().__init__()
 
         self.features = nn.Sequential(
@@ -38,6 +43,8 @@ class BarkCNN(nn.Module):
             nn.BatchNorm1d(128),
             nn.ReLU(inplace=True),
         )
+
+        self.dropout = nn.Dropout(dropout_rate)
 
         self.classifier = nn.Sequential(
             nn.Linear(128, 1),
@@ -61,6 +68,9 @@ class BarkCNN(nn.Module):
 
         # Global Average Pooling: [batch, 128, T'] → [batch, 128]
         x = x.mean(dim=2)
+
+        # Dropout
+        x = self.dropout(x)
 
         # 分類器
         x = self.classifier(x)

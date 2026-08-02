@@ -71,9 +71,9 @@ class BarkDatasetBase(Dataset, ABC):
         Returns:
             (features, label) のタプル。
             model_type == "conv2d" の場合:
-                features: shape [1, 40, fixed_frame_length] の MFCC テンソル (float32)。
+                features: shape [1, 40, fixed_frame_length] の固定長 MFCC テンソル (float32)。
             model_type == "conv1d" の場合:
-                features: shape [T, 40] の MFCC テンソル (float32)。
+                features: shape [T, 40] の可変長 MFCC テンソル (float32, T >= 1)。
             label: shape [1] のラベルテンソル (float32, 0.0 or 1.0)。
 
         Raises:
@@ -103,27 +103,26 @@ class BarkDatasetBase(Dataset, ABC):
 
         pcm = audio.astype(np.float32)
 
-        if self._config.model_type == "conv2d":
-            # データ拡張（学習時のみ）
-            if self._is_train and self._config.use_augmentation:
-                if np.random.random() < self._config.augmentation_probability:
-                    pcm = apply_time_shift(pcm)
-                if np.random.random() < self._config.augmentation_probability:
-                    pcm = apply_gaussian_noise(pcm)
+        # データ拡張（学習時のみ、model_type 非依存）
+        if self._is_train and self._config.use_augmentation:
+            if np.random.random() < self._config.augmentation_probability:
+                pcm = apply_time_shift(pcm)
+            if np.random.random() < self._config.augmentation_probability:
+                pcm = apply_gaussian_noise(pcm)
 
+        if self._config.model_type == "conv2d":
             # 固定長 MFCC 特徴量抽出
             features = self._feature_extractor.extract(
                 pcm,
                 self._config.sample_rate,
                 fixed_length=self._config.fixed_frame_length,
             )
-
             # channels-first に転置: [fixed_frame_length, 40] → [40, fixed_frame_length]
             features_tensor = torch.from_numpy(features).T
             # チャンネル次元を追加: [40, fixed_frame_length] → [1, 40, fixed_frame_length]
             features_tensor = features_tensor.unsqueeze(0)
         else:
-            # conv1d パス: 可変長 MFCC（データ拡張なし、fixed_length なし）
+            # conv1d パス: 可変長 MFCC [T, 40]
             features = self._feature_extractor.extract(pcm, self._config.sample_rate)
             features_tensor = torch.from_numpy(features)  # [T, 40]
 

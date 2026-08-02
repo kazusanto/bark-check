@@ -175,8 +175,9 @@ CLI レイヤーでは AudioLoader が音声ファイルをデコードしてモ
 1. THE BarkCNN SHALL 入力テンソル shape [B, T, 40]（channels-last）を受け取り、内部で [B, 40, T]（channels-first）に permute する
 2. THE BarkCNN SHALL 3 層の Conv1d ブロック（Conv1d → BatchNorm1d → ReLU → MaxPool1d）を持つ
 3. THE BarkCNN SHALL Global Average Pooling（時間軸方向の mean）を使用して畳み込み出力を固定長ベクトルに集約する
-4. THE BarkCNN SHALL Linear(128, 1) → Sigmoid で出力を 0.0〜1.0 の確率値とする
+4. THE BarkCNN SHALL Dropout → Linear(128, 1) → Sigmoid で出力を 0.0〜1.0 の確率値とする
 5. THE BarkCNN SHALL 可変長入力（任意の T）に対応し、動的軸付きで ONNX エクスポート可能とする
+6. THE BarkCNN SHALL dropout_rate パラメータ（デフォルト 0.3）を受け取り、Dropout レイヤーに適用する
 
 ---
 
@@ -259,8 +260,8 @@ CLI レイヤーでは AudioLoader が音声ファイルをデコードしてモ
 1. THE BarkDatasetBase SHALL torch.utils.data.Dataset を継承した抽象基底クラスとして、共通処理（ランダムクロップ、MFCC 抽出、データ拡張、ゼロパディング）を `__getitem__` 内に実装する。
 2. THE BarkDatasetBase SHALL 抽象メソッド load_entries() を定義し、サブクラスに `list[dict]` 形式のエントリリスト返却を要求する。
 3. FOR ALL load_entries() が返すエントリ, THE BarkDatasetBase SHALL 各エントリが "filepath"（音声ファイルの Path）、"label"（0 または 1 の整数）、"fold"（1 以上の正の整数）のキーを含むことを前提とする。
-4. WHEN model_type が "conv2d" の場合, THE BarkDatasetBase の `__getitem__` SHALL shape [1, 40, fixed_frame_length] の float32 テンソルとラベル shape [1] のタプルを返す。WHEN model_type が "conv1d" の場合, THE BarkDatasetBase の `__getitem__` SHALL shape [T, 40] の float32 テンソルとラベル shape [1] のタプルを返す。
-5. WHILE is_train が True の場合, THE BarkDatasetBase SHALL ランダムクロップとデータ拡張（model_type が "conv2d" の場合のみ）を適用する。WHILE is_train が False の場合, THE BarkDatasetBase SHALL 中央クロップを適用し、データ拡張を適用しない。
+4. WHEN model_type が "conv2d" の場合, THE BarkDatasetBase の `__getitem__` SHALL shape [1, 40, fixed_frame_length] の float32 テンソルとラベル shape [1] のタプルを返す。WHEN model_type が "conv1d" の場合, THE BarkDatasetBase の `__getitem__` SHALL shape [T, 40]（T ≥ 1）の float32 テンソルとラベル shape [1] のタプルを返す。
+5. WHILE is_train が True の場合, THE BarkDatasetBase SHALL ランダムクロップとデータ拡張を適用する。WHILE is_train が False の場合, THE BarkDatasetBase SHALL 中央クロップを適用し、データ拡張を適用しない。
 6. IF load_entries() が返すエントリの "filepath" が存在しないファイルを指す場合, THEN THE BarkDatasetBase SHALL `__getitem__` 呼び出し時にファイルが見つからないことを示す例外を発生させる。
 7. THE ESC50BarkDataset SHALL BarkDatasetBase を継承し、ESC-50 固有のメタデータ読み込みを load_entries() で実装する。
 
