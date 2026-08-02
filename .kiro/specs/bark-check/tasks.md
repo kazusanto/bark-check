@@ -99,12 +99,10 @@ bark-check の完全な実装計画。CLI 推論パイプラインと学習パ�
     - model_type="conv2d", augmentation_probability=0.5, random_seed=42
     - _Requirements: 7.2, 7.7_
   - [x] 13.2 `training/dataset.py` に ESC50BarkDataset と download_esc50() を実装する
-    - ESC-50 自動ダウンロード・展開
-    - メタデータ CSV 読み込み、正例/負例フィルタリング
-    - ランダムクロップ（学習）/ 中央クロップ（バリデーション）
-    - クラスバランス調整（正例オーバーサンプリング）
-    - model_type に応じた特徴量出力（conv2d: [1,40,199], conv1d: [T,40]）
-    - _Requirements: 7.1, 7.3, 7.4, 10.1-10.5_
+    - ESC-50 自動ダウンロード・展開（download_esc50）
+    - BarkDatasetBase を継承し、load_entries() で ESC-50 メタデータ CSV から正例/負例エントリを構築する
+    - _get_val_fold() で config.val_fold を返す
+    - _Requirements: 7.1, 15.7, 18.3_
   - [x] 13.3 `training/augmentation.py` にデータ拡張関数を実装する
     - `apply_time_shift(pcm, max_shift=1600)`: ±1600 サンプルのランダムシフト
     - `apply_gaussian_noise(pcm, snr_min=20.0, snr_max=40.0)`: ガウシアンノイズ付加
@@ -177,6 +175,28 @@ bark-check の完全な実装計画。CLI 推論パイプラインと学習パ�
 
 - [x] 19. 最終チェックポイント — 全テスト（推論 + 学習）が通ること
 
+- [x] 20. UrbanSound8K 統合
+  - [x] 20.1 TrainingConfig に data_sources, urbansound8k_dir, urbansound8k_positive_classes, urbansound8k_negative_classes, urbansound8k_val_fold フィールドを定義する
+    - _Requirements: 16.1, 16.2, 16.3, 14.2, 14.3_
+  - [x] 20.2 `training/dataset_base.py` に BarkDatasetBase 抽象基底クラスを実装する
+    - torch.utils.data.Dataset と ABC を継承
+    - 抽象メソッド load_entries(), _get_val_fold() を定義
+    - __getitem__ で共通パイプライン（音声読み込み、クロップ/パディング、データ拡張、MFCC 抽出）を実装
+    - model_type に応じた特徴量出力（conv2d: [1,40,199], conv1d: [T,40]）
+    - _Requirements: 15.1, 15.2, 15.3, 15.4, 15.5, 15.6, 13.2_
+  - [x] 20.3 `training/dataset_urbansound8k.py` に UrbanSound8KBarkDataset を実装する
+    - BarkDatasetBase を継承し、load_entries() で UrbanSound8K メタデータ CSV からエントリを構築する
+    - _get_val_fold() で config.urbansound8k_val_fold を返す
+    - _Requirements: 13.1, 13.3, 14.1_
+  - [x] 20.4 `training/dataset_factory.py` に build_dataset(), _validate_config(), _check_urbansound8k_available(), _apply_class_balance() を実装する
+    - data_sources に応じた Dataset インスタンス構築、ConcatDataset 結合、クラスバランス調整
+    - _Requirements: 17.1, 17.2, 17.3, 17.4, 17.5, 17.6, 14.4, 14.5, 16.5, 19.1, 19.2, 19.3_
+  - [x] 20.5 `training/train.py` に --data-sources CLI 引数と build_dataset() によるデータセット構築を実装する
+    - カンマ区切り文字列のパース、無効ソース名のエラー処理、データソースごとのパラメータ表示
+    - _Requirements: 16.4, 16.5, 18.1, 18.2_
+  - [x] 20.6 `training/README.md` に UrbanSound8K データソースの使い方、--data-sources 引数、手動ダウンロード手順を記述する
+    - _Requirements: 19.1_
+
 ---
 
 ## Notes
@@ -204,7 +224,8 @@ bark-check の完全な実装計画。CLI 推論パイプラインと学習パ�
     { "id": 9, "tasks": ["14.1", "14.2", "15.1"] },
     { "id": 10, "tasks": ["14.3", "15.2", "15.3", "15.4", "15.5"] },
     { "id": 11, "tasks": ["16.1", "16.2", "16.3", "16.4"] },
-    { "id": 12, "tasks": ["17.1", "17.2", "17.3", "18.1", "18.2"] }
+    { "id": 12, "tasks": ["17.1", "17.2", "17.3", "18.1", "18.2"] },
+    { "id": 13, "tasks": ["20.1", "20.2", "20.3", "20.4", "20.5", "20.6"] }
   ]
 }
 ```

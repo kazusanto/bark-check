@@ -6,9 +6,11 @@ bark-check は、音声ファイルを入力として犬の吠え声（bark）�
 判定ロジックはコアライブラリ `BarkDetector` として独立しており、CLI はそのラッパーに過ぎない。
 この分離により、iOS Swift アプリ等の他プラットフォームへの同一アルゴリズムの移植・転用を容易にする。
 
-学習パイプライン（`training/`）は ESC-50 データセットを使用して 2 種類のモデルを学習する:
+学習パイプライン（`training/`）は ESC-50 および UrbanSound8K データセットを使用して 2 種類のモデルを学習する:
 - **BarkCNN** (Conv1d): 可変長入力対応、CLI 推論向け
 - **BarkCNN2d** (Conv2d): 固定長 4D 入力、CoreML (iOS 12) 互換 ONNX エクスポート向け
+
+データセット層は `BarkDatasetBase` 抽象基底クラスにより統一され、`ESC50BarkDataset` と `UrbanSound8KBarkDataset` が個別のデータソースを担当する。`DatasetFactory` が `TrainingConfig.data_sources` 設定に基づいてデータセットの選択・結合・クラスバランス調整を行い、`train.py` はファクトリ経由でデータセットを取得する。
 
 ### 主要設計方針
 
@@ -16,6 +18,7 @@ bark-check は、音声ファイルを入力として犬の吠え声（bark）�
 - **detect() はエラーを例外で伝播しない**: 全てのエラー情報を `DetectionResult.error` フィールドに格納する
 - **モデル自動判別**: BarkDetector は ONNX 入力 shape メタデータからモデル形式を自動判別する
 - **CoreML 互換性**: Conv2d モデルは opset 9、全軸静的、許可オペレータのみで ONNX エクスポートする
+- **マルチデータソース対応**: Dataset 層を抽象基底クラスで統一し、DatasetFactory パターンで複数データソースの結合を管理する
 
 ---
 
@@ -38,9 +41,14 @@ graph TD
     end
 
     subgraph Training Pipeline
-        H[TrainingConfig<br/>config.py] --> I[ESC50BarkDataset<br/>dataset.py]
-        I --> J[DataAugmentation<br/>augmentation.py]
-        I --> K[DataLoader]
+        H[TrainingConfig<br/>config.py] --> Factory[DatasetFactory<br/>dataset_factory.py]
+        Factory -->|"esc50"| I[ESC50BarkDataset<br/>dataset.py]
+        Factory -->|"urbansound8k"| US8K[UrbanSound8KBarkDataset<br/>dataset_urbansound8k.py]
+        I --> Base[BarkDatasetBase<br/>dataset_base.py]
+        US8K --> Base
+        Base --> J[DataAugmentation<br/>augmentation.py]
+        Factory -->|multiple sources| Concat[ConcatDataset + Balancing]
+        Base --> K[DataLoader]
         K --> L{model_type}
         L -->|conv1d| M[BarkCNN<br/>model.py]
         L -->|conv2d| N[BarkCNN2d<br/>model.py]
@@ -61,7 +69,10 @@ graph TD
 | Core | `feature_extractor.py` | PCM → MFCC 特徴量抽出（可変長/固定長） |
 | Core | `models.py` | DetectionResult データモデル |
 | Training | `training/config.py` | TrainingConfig データクラス |
+| Training | `training/dataset_base.py` | BarkDatasetBase 抽象基底クラス |
 | Training | `training/dataset.py` | ESC50BarkDataset + ダウンロード |
+| Training | `training/dataset_urbansound8k.py` | UrbanSound8KBarkDataset |
+| Training | `training/dataset_factory.py` | DatasetFactory（データソース選択・結合・バランス調整） |
 | Training | `training/augmentation.py` | データ拡張（タイムシフト、ガウシアンノイズ） |
 | Training | `training/model.py` | BarkCNN, BarkCNN2d モデル定義 |
 | Training | `training/train.py` | 学習ループ + ONNX エクスポート |
@@ -71,13 +82,25 @@ graph TD
 
 ```mermaid
 sequenceDiagram
-    participant DS as ESC50BarkDataset
+    participant CLI as train.py
+    participant F as DatasetFactory
+    participant DS as BarkDatasetBase subclass
     participant Aug as DataAugmentation
     participant FE as FeatureExtractor
     participant Model as BarkCNN / BarkCNN2d
 
-    DS->>DS: WAV 読み込み (librosa, 16kHz mono)
-    DS->>DS: クロップ (学習: ランダム / バリデーション: 中央)
+    CLI->>F: build_dataset(config, is_train)
+    F->>F: validate config (class overlap, range, source names)
+    F->>DS: instantiate per data_source
+    DS->>DS: load_entries() → list[dict]
+    DS->>DS: fold filtering (train/val split)
+    F->>F: concat if multiple + balance if is_train
+    F-->>CLI: Dataset
+
+    Note over CLI: DataLoader iteration
+    CLI->>DS: __getitem__(idx)
+    DS->>DS: load audio (librosa, 16kHz mono)
+    DS->>DS: crop/pad to clip_length_samples
     DS->>Aug: PCM [clip_length_samples]
     Aug->>Aug: TimeShift (±1600 samples, p=0.5)
     Aug->>Aug: GaussianNoise (SNR 20-40dB, p=0.5)
@@ -240,18 +263,97 @@ class TrainingConfig:
     model_type: str = "conv2d"              # "conv1d" or "conv2d"
     augmentation_probability: float = 0.5
     random_seed: int = 42
+
+    # データソース設定
+    data_sources: list[str] = ["esc50"]     # 有効値: "esc50", "urbansound8k"
+    urbansound8k_dir: Path = Path("data/UrbanSound8K")
+    urbansound8k_positive_classes: list[int] = [3]      # 3=dog_bark
+    urbansound8k_negative_classes: list[int] = [2, 8, 1, 5]  # children_playing, siren, car_horn, engine_idling
+    urbansound8k_val_fold: int = 10         # 1〜10
 ```
 
-### ESC50BarkDataset
+### BarkDatasetBase（`training/dataset_base.py`）
+
+抽象基底クラス。音声読み込み→クロップ/パディング→拡張→MFCC 抽出の共通パイプラインを集約する。
 
 ```python
-class ESC50BarkDataset(Dataset):
-    """ESC-50 から構築した犬の吠え声二値分類データセット。
+class BarkDatasetBase(Dataset, ABC):
+    """複数データソースに対応する抽象基底データセット。"""
+
+    def __init__(self, config: TrainingConfig, *, is_train: bool = True) -> None: ...
+
+    @abstractmethod
+    def load_entries(self) -> list[dict]:
+        """データソース固有のメタデータを読み込み、統一形式のエントリリストを返す。
+        Returns: 各エントリは {"filepath": Path, "label": int, "fold": int} を含む。
+        """
+        ...
+
+    @abstractmethod
+    def _get_val_fold(self) -> int:
+        """バリデーション fold 番号を返す。"""
+        ...
+
+    def __len__(self) -> int: ...
+    def __getitem__(self, idx: int) -> tuple[torch.Tensor, torch.Tensor]:
+        """音声読み込み → クロップ/パディング → 拡張 → MFCC 抽出 → テンソル変換。
+        conv2d: [1, 40, 199], conv1d: [T, 40]。ファイル不在時は FileNotFoundError。
+        """
+        ...
+```
+
+### ESC50BarkDataset（`training/dataset.py`）
+
+BarkDatasetBase を継承し、ESC-50 固有のメタデータ読み込みを実装する。コンストラクタのシグネチャ `(config: TrainingConfig, *, is_train: bool)` を維持し後方互換性を確保する。
+
+```python
+class ESC50BarkDataset(BarkDatasetBase):
+    """ESC-50 データソースに特化した Dataset。
     model_type=="conv2d": features shape [1, 40, 199], label shape [1]
     model_type=="conv1d": features shape [T, 40], label shape [1]
     """
     def __init__(self, config: TrainingConfig, *, is_train: bool = True) -> None: ...
+    def _get_val_fold(self) -> int: ...
+    def load_entries(self) -> list[dict]: ...
     def __getitem__(self, idx: int) -> tuple[torch.Tensor, torch.Tensor]: ...
+```
+
+### UrbanSound8KBarkDataset（`training/dataset_urbansound8k.py`）
+
+UrbanSound8K 固有のメタデータ読み込みを実装する。
+
+```python
+class UrbanSound8KBarkDataset(BarkDatasetBase):
+    """UrbanSound8K データソースに特化した Dataset。"""
+
+    def _get_val_fold(self) -> int: ...
+    def load_entries(self) -> list[dict]: ...
+```
+
+### DatasetFactory（`training/dataset_factory.py`）
+
+TrainingConfig に基づいてデータセットを構築するファクトリモジュール。バリデーション、インスタンス化、結合、クラスバランス調整を担当する。
+
+```python
+_VALID_SOURCES = {"esc50", "urbansound8k"}
+
+def build_dataset(config: TrainingConfig, *, is_train: bool) -> Dataset:
+    """TrainingConfig に基づいてデータセットを構築する。
+    Raises: ValueError (無効な設定), FileNotFoundError (UrbanSound8K 未検出)
+    """
+    ...
+
+def _validate_config(config: TrainingConfig) -> None:
+    """data_sources とクラス設定のバリデーション。"""
+    ...
+
+def _check_urbansound8k_available(config: TrainingConfig) -> None:
+    """UrbanSound8K メタデータの存在確認。"""
+    ...
+
+def _apply_class_balance(dataset: Dataset) -> Dataset:
+    """正例のオーバーサンプリングでクラスバランスを調整する。"""
+    ...
 ```
 
 ### データ拡張関数
@@ -409,6 +511,52 @@ Sigmoid:       [B, 1]  (values in [0.0, 1.0])
 }
 ```
 
+### エントリ辞書（load_entries() の返却型）
+
+| キー | 型 | 説明 |
+|---|---|---|
+| `filepath` | `Path` | 音声ファイルの絶対/相対パス |
+| `label` | `int` | 0（負例）または 1（正例） |
+| `fold` | `int` | クロスバリデーション fold 番号（1 以上） |
+
+### TrainingConfig 追加フィールド一覧
+
+| フィールド | 型 | デフォルト値 | 説明 |
+|---|---|---|---|
+| `data_sources` | `list[str]` | `["esc50"]` | 使用データソース |
+| `urbansound8k_dir` | `Path` | `Path("data/UrbanSound8K")` | UrbanSound8K ルートディレクトリ |
+| `urbansound8k_positive_classes` | `list[int]` | `[3]` | UrbanSound8K 正例クラスID |
+| `urbansound8k_negative_classes` | `list[int]` | `[2, 8, 1, 5]` | UrbanSound8K 負例クラスID |
+| `urbansound8k_val_fold` | `int` | `10` | UrbanSound8K バリデーション fold |
+
+### UrbanSound8K メタデータ CSV カラム
+
+| カラム | 型 | 説明 |
+|---|---|---|
+| `slice_file_name` | `str` | 音声ファイル名 |
+| `fsID` | `int` | Freesound ID |
+| `start` | `float` | 開始時刻（秒） |
+| `end` | `float` | 終了時刻（秒） |
+| `salience` | `int` | 顕著性 (1=foreground, 2=background) |
+| `fold` | `int` | Fold 番号（1〜10） |
+| `classID` | `int` | クラス番号（0〜9） |
+| `class` | `str` | クラス名 |
+
+### UrbanSound8K classID マッピング
+
+| classID | class name | 用途 |
+|---|---|---|
+| 0 | air_conditioner | — |
+| 1 | car_horn | 負例（デフォルト） |
+| 2 | children_playing | 負例（デフォルト） |
+| 3 | dog_bark | 正例（デフォルト） |
+| 4 | drilling | — |
+| 5 | engine_idling | 負例（デフォルト） |
+| 6 | gun_shot | — |
+| 7 | jackhammer | — |
+| 8 | siren | 負例（デフォルト） |
+| 9 | street_music | — |
+
 ---
 
 ## Error Handling
@@ -449,6 +597,27 @@ Sigmoid:       [B, 1]  (values in [0.0, 1.0])
 | 学習・エクスポート・検証全て成功 | 0 |
 | ONNX 検証失敗 (conv2d) | 1 |
 | データセット読み込み失敗 | 1 |
+
+### DatasetFactory のバリデーションエラー（ValueError）
+
+| 条件 | エラーメッセージ | 発生箇所 |
+|---|---|---|
+| 未知のデータソース名 | `"Unknown data source: '{name}'. Valid sources: ['esc50', 'urbansound8k']"` | `_validate_config()` |
+| classID 重複 | `"UrbanSound8K positive/negative class overlap: {ids}"` | `_validate_config()` |
+| classID 範囲外 | `"Invalid UrbanSound8K classID: {id}. Must be 0-9."` | `_validate_config()` |
+
+### DatasetFactory のファイル不在エラー（FileNotFoundError）
+
+| 条件 | エラーメッセージ | 発生箇所 |
+|---|---|---|
+| UrbanSound8K CSV 未検出 | ダウンロード URL + 期待ディレクトリ構成を含むメッセージ | `_check_urbansound8k_available()` |
+| 音声ファイル未検出 | `"Audio file not found: {filepath}"` | `BarkDatasetBase.__getitem__()` |
+
+### DatasetFactory エラー処理方針
+
+- **フォールバックなし**: UrbanSound8K が見つからない場合、他のデータソースへのフォールバックは行わない。明示的にエラーで停止する。
+- **Early fail**: バリデーションは `build_dataset()` の冒頭で実施し、データセット構築前に全ての設定不備を検出する。
+- **自動ダウンロードなし**: UrbanSound8K はライセンス制約（CC BY-NC 4.0）により自動ダウンロードを行わない。エラーメッセージに手動ダウンロード手順を含める。
 
 ---
 
@@ -552,6 +721,54 @@ ESC50BarkDataset（`is_train=False`）から同じインデックスのサンプ
 
 **Validates: Requirements 8.1, 8.2, 8.3, 8.4**
 
+### Property 17: ラベル割り当て正確性
+
+任意の UrbanSound8K メタデータエントリにおいて、load_entries() が返すエントリの label 値は、classID が urbansound8k_positive_classes に含まれる場合は 1、urbansound8k_negative_classes に含まれる場合は 0 となる。同様に ESC50BarkDataset においても、target が positive_classes に含まれる場合は 1、negative_classes に含まれる場合は 0 となる。
+
+**Validates: Requirements 13.1, 14.1**
+
+### Property 18: ゼロパディング不変量
+
+任意の clip_length_samples 未満の長さの音声データに対して、BarkDatasetBase のクロップ/パディング処理後の出力長は常に clip_length_samples と等しく、末尾にゼロが付加される。
+
+**Validates: Requirements 13.2**
+
+### Property 19: Fold 分割正確性
+
+任意の load_entries() が返すエントリ集合に対して、is_train=True のとき結果に val_fold のエントリは含まれず、is_train=False のとき結果は val_fold のエントリのみで構成される。
+
+**Validates: Requirements 13.3, 17.4**
+
+### Property 20: 設定バリデーション
+
+任意の TrainingConfig において、(a) data_sources に "esc50" および "urbansound8k" 以外の文字列が含まれる場合、(b) urbansound8k_positive_classes と urbansound8k_negative_classes に重複する classID がある場合、(c) UrbanSound8K の classID に 0〜9 範囲外の値が含まれる場合、DatasetFactory は ValueError を発生させる。
+
+**Validates: Requirements 14.4, 14.5, 16.5, 17.6**
+
+### Property 21: エントリ契約
+
+任意の BarkDatasetBase のサブクラスにおいて、load_entries() が返す全エントリは "filepath"（Path 型）、"label"（0 または 1 の整数）、"fold"（1 以上の正の整数）のキーを含む。
+
+**Validates: Requirements 15.3**
+
+### Property 22: 出力テンソル形状
+
+任意の有効なエントリに対して、model_type が "conv2d" のとき __getitem__ は shape [1, 40, fixed_frame_length] の float32 テンソルを返し、model_type が "conv1d" のとき shape [T, 40]（T ≥ 1）の float32 テンソルを返す。ラベルは常に shape [1] の float32 テンソルで値は 0.0 または 1.0 である。
+
+**Validates: Requirements 15.4**
+
+### Property 23: クラスバランス
+
+任意の正例と負例の両方を含む学習用エントリ集合に対して、オーバーサンプリング後の正例数と負例数の差は 1 以下である（|positives - negatives| ≤ 1）。
+
+**Validates: Requirements 17.3**
+
+### Property 24: ConcatDataset 長さの加法性
+
+任意の複数データソースの組み合わせにおいて、結合後のデータセット長は各個別データセット長の合計に等しい（クラスバランス調整前）。
+
+**Validates: Requirements 17.2**
+
 ---
 
 ## Testing Strategy
@@ -579,10 +796,18 @@ tests/
 ├── test_data_augmentation.py      # Property 14, 15
 ├── test_onnx_validator.py         # ONNX 検証スモークテスト
 ├── test_bark_detector_compat.py   # Property 16 + モデル自動判別
-└── test_training_config.py        # TrainingConfig フィールド検証
+├── test_training_config.py        # TrainingConfig フィールド検証
+├── test_dataset_properties.py     # Property 17-24（UrbanSound8K 統合 PBT）
+├── test_dataset_factory.py        # DatasetFactory バリデーション・構築ロジック
+└── test_dataset_base.py           # BarkDatasetBase インタフェース
 ```
 
 ### プロパティベーステスト設定
 
 - 各テストは最低 100 イテレーション（`@settings(max_examples=100)`）
 - タグ形式: `# Feature: bark-check, Property {N}: {property_text}`
+
+### UrbanSound8K 統合テスト方針
+
+- Property 17-21, 23-24: メタデータのモック生成（CSV 内容を Hypothesis で生成）で検証。実音声ファイルは不要。
+- Property 22: 短いランダム PCM 配列を生成し、FeatureExtractor のモックまたは実行で出力形状を検証。
